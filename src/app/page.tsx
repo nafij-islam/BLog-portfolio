@@ -144,7 +144,11 @@ export default function HomePage() {
             >
               {/* Inner glowing core */}
               <div className="absolute inset-0 bg-radial-gradient from-brand-accent/20 to-transparent pointer-events-none" />
-              <Compass className="w-28 h-28 text-brand-accent/65 animate-[spin_40s_linear_infinite]" />
+              <img
+                src="/nafij-islam.jpg"
+                alt="Nafij Islam"
+                className="w-full h-full object-cover rounded-2xl relative z-10"
+              />
             </motion.div>
 
             {/* Floating technology cards */}

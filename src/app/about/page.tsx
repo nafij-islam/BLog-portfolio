@@ -223,7 +223,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
           <div className="relative rounded-3xl overflow-hidden border border-brand-border-white p-8 md:p-12 lg:p-16 bg-brand-card">
             {/* Visual background image glow */}
-            <div className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1000&q=80')" }} />
+            <div className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" style={{ backgroundImage: "url('/bannerimg-DAerhh9n.jpeg')" }} />
             <div className="absolute inset-0 bg-radial-gradient from-transparent via-brand-card to-brand-card-dark pointer-events-none" />
 
             <div className="relative z-10 max-w-2xl flex flex-col items-start text-left">
