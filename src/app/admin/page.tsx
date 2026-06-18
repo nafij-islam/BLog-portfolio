@@ -1969,7 +1969,14 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-4 p-4 rounded-xl bg-brand-card-dark/40 border border-brand-border-white/5">
                           <div className="relative group w-16 h-16 rounded-full overflow-hidden border border-brand-accent bg-brand-card">
                             {avatarPreview ? (
-                              <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                              <img
+                                src={avatarPreview}
+                                alt="Avatar Preview"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face';
+                                }}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-brand-text-muted">
                                 <UserIcon className="w-6 h-6" />

@@ -110,6 +110,9 @@ export const Navbar = () => {
                 <img
                   src={user.avatar}
                   alt={user.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face';
+                  }}
                   className="w-6 h-6 rounded-full border border-brand-accent/40 object-cover"
                 />
                 <span className="max-w-[100px] truncate">{user.name.split(' ')[0]}</span>
@@ -177,6 +180,9 @@ export const Navbar = () => {
               <img
                 src={user.avatar}
                 alt={user.name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face';
+                }}
                 className="w-7 h-7 rounded-full border border-brand-accent/40 object-cover"
               />
             </Link>

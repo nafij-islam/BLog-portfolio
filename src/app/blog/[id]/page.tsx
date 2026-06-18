@@ -310,7 +310,14 @@ export default function BlogDetailPage() {
                   <Card hoverEffect={false} key={comment.id} className="p-4 border border-brand-border-white bg-brand-card-dark/30">
                     <div className="flex items-center justify-between gap-4 mb-2">
                       <div className="flex items-center gap-2.5">
-                        <img src={comment.userAvatar} alt={comment.userName} className="w-7 h-7 rounded-full object-cover border border-brand-border-white" />
+                        <img
+                          src={comment.userAvatar}
+                          alt={comment.userName}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop';
+                          }}
+                          className="w-7 h-7 rounded-full object-cover border border-brand-border-white"
+                        />
                         <div>
                           <span className="text-xs font-bold text-white">{comment.userName}</span>
                           <span className="text-[8px] text-brand-text-muted block mt-0.5">{new Date(comment.date).toLocaleDateString()}</span>

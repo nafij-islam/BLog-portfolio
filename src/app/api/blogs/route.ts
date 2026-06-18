@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     if (!isAdmin) {
       filter.status = 'published';
-    } else if (status) {
+    } else if (status && status !== 'all') {
       filter.status = status;
     }
 

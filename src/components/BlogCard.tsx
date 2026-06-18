@@ -63,7 +63,14 @@ export const BlogCard = ({ blog }: BlogCardProps) => {
         {/* Footer info: Author & metrics */}
         <div className="mt-auto pt-4 border-t border-brand-border-white flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={author.avatar} alt={author.name} className="w-6.5 h-6.5 rounded-full object-cover border border-brand-border-white" />
+            <img
+              src={author.avatar}
+              alt={author.name}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face';
+              }}
+              className="w-6.5 h-6.5 rounded-full object-cover border border-brand-border-white"
+            />
             <div>
               <p className="text-[10px] font-bold text-white leading-none">{author.name}</p>
               <p className="text-[8px] text-brand-text-muted mt-0.5">{author.role}</p>
