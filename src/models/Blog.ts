@@ -67,7 +67,6 @@ const BlogSchema = new Schema<IBlog>(
   { timestamps: true }
 );
 
-BlogSchema.index({ slug: 1 });
 BlogSchema.index({ status: 1 });
 BlogSchema.index({ isFeatured: 1 });
 BlogSchema.index({ category: 1 });
