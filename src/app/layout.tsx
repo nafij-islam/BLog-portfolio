@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nafij.bro.bd"),
+  metadataBase: new URL("https://nafij-portfolio.vercel.app/"),
   title: "Nafij. | Creative Developer & No-Code Architect Portfolio",
   description: "Explore the professional portfolio of Nafij, presenting high-performance Next.js frontends, custom Shopify sections, Bubble.io no-code software architectures, and UI/UX custom designs.",
   keywords: ["Next.js", "React", "TypeScript", "Tailwind CSS", "Shopify", "Bubble.io", "No-code Developer", "Portfolio"],
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: "Nafij. | Creative Developer & No-Code Architect Portfolio",
     description: "Explore Next.js frontends, custom Shopify sections, Bubble.io web architectures, and UI/UX design translations.",
     type: "website",
-    url: "https://nafij.bro.bd",
+    url: "https://nafij-portfolio.vercel.app/",
     images: [
       {
         url: "/nafij-islam-og.png",
@@ -70,4 +70,5 @@ export default function RootLayout({
       </body>
     </html>
   );
+
 }
