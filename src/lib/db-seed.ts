@@ -55,7 +55,7 @@ export async function seedDatabase() {
       status: 'active',
       bio: 'Professional Frontend Developer & No-Code Architect',
       profession: 'Frontend Architect',
-      website: 'https://nafij.dev',
+      website: 'https://nafij.bro.bd',
       socialLinks: {
         github: 'https://github.com',
         linkedin: 'https://linkedin.com',
