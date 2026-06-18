@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://nafij.dev"),
   title: "Nafij. | Creative Developer & No-Code Architect Portfolio",
   description: "Explore the professional portfolio of Nafij, presenting high-performance Next.js frontends, custom Shopify sections, Bubble.io no-code software architectures, and UI/UX custom designs.",
   keywords: ["Next.js", "React", "TypeScript", "Tailwind CSS", "Shopify", "Bubble.io", "No-code Developer", "Portfolio"],
@@ -25,12 +26,18 @@ export const metadata: Metadata = {
     url: "https://nafij.dev",
     images: [
       {
-        url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop",
+        url: "/nafij-islam-og.png",
         width: 1200,
         height: 630,
         alt: "Nafij Islam Portfolio Layout"
       }
     ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nafij. | Creative Developer & No-Code Architect Portfolio",
+    description: "Explore Next.js frontends, custom Shopify sections, Bubble.io web architectures, and UI/UX design translations.",
+    images: ["/nafij-islam-og.png"]
   }
 };
 
