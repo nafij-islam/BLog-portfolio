@@ -60,8 +60,8 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
         {/* Actions Button */}
         <div className="flex items-center gap-2 mt-auto">
           <Link href={`/projects/${id}`} className="flex-1">
-            <Button variant="secondary" size="sm" className="w-full text-xs font-semibold gap-1.5 py-2!">
-              Details <ArrowRight className="w-3.5 h-3.5" />
+            <Button variant="primary" size="sm" className="w-full text-xs font-semibold py-2!" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+              Details
             </Button>
           </Link>
           <a
