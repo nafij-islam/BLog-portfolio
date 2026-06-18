@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
+import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-brand-bg text-brand-text font-sans selection:bg-brand-accent selection:text-white">
         <AuthProvider>
           <ToastProvider>
+            <AnalyticsTracker />
             {children}
           </ToastProvider>
         </AuthProvider>

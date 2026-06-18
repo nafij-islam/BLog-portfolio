@@ -29,7 +29,15 @@ import {
   Github,
   Linkedin,
   Twitter,
-  Search
+  Search,
+  ThumbsUp,
+  RefreshCw,
+  Activity,
+  TrendingUp,
+  UserCheck,
+  FileText,
+  Image as ImageIcon,
+  Tv
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -61,6 +69,10 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [overviewStats, setOverviewStats] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isOverviewLoading, setIsOverviewLoading] = useState(true);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
 
   // Loading indicator for actions
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -277,7 +289,27 @@ export default function AdminDashboard() {
 
   // Load all DB elements on mount / refresh
   const loadData = async () => {
+    setIsOverviewLoading(true);
+    setOverviewError(null);
     try {
+      // Fetch dynamic analytics & overview stats
+      const [overviewRes, analyticsRes] = await Promise.all([
+        fetch('/api/admin/overview'),
+        fetch('/api/admin/analytics')
+      ]);
+
+      const overviewData = await overviewRes.json();
+      if (overviewData.success) {
+        setOverviewStats(overviewData.data);
+      } else {
+        setOverviewError(overviewData.message || 'Failed to fetch overview statistics.');
+      }
+
+      const analyticsDataJson = await analyticsRes.json();
+      if (analyticsDataJson.success) {
+        setAnalyticsData(analyticsDataJson.data);
+      }
+
       // 1. Projects
       const projectsRes = await fetch('/api/projects');
       const projectsData = await projectsRes.json();
@@ -354,9 +386,12 @@ export default function AdminDashboard() {
         setATwitter(user.socialLinks?.twitter || '');
         setAvatarPreview(user.avatar || '');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load admin gateway data:', error);
+      setOverviewError(error.message || 'Failed to load gateway database data.');
       showToast('Error loading gateway database data.', 'error');
+    } finally {
+      setIsOverviewLoading(false);
     }
   };
 
@@ -1132,45 +1167,375 @@ export default function AdminDashboard() {
               {/* TAB 1: OVERVIEW */}
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  {/* Stats Cards grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {[
-                      { l: 'Projects', v: projects.length, c: 'border-l-brand-accent text-brand-accent' },
-                      { l: 'Blogs', v: blogs.length, c: 'border-l-blue-400 text-blue-400' },
-                      { l: 'Users', v: users.length, c: 'border-l-green-400 text-green-400' },
-                      { l: 'Comments', v: comments.length, c: 'border-l-purple-400 text-purple-400' },
-                      { l: 'Messages', v: messages.length, c: 'border-l-amber-500 text-amber-500' }
-                    ].map((stat, idx) => (
-                      <Card hoverEffect key={idx} className={`p-4 border-l-4 border border-brand-border-white ${stat.c.split(' ')[0]}`}>
-                        <p className="text-[9px] text-brand-text-muted font-bold mb-1 leading-none">{stat.l.toUpperCase()}</p>
-                        <p className="text-xl font-extrabold text-white mt-1 leading-none">{stat.v}</p>
-                      </Card>
-                    ))}
+                  {/* Overview Control bar */}
+                  <div className="flex items-center justify-between bg-brand-card/40 p-4 rounded-xl border border-brand-border-white/5">
+                    <div>
+                      <h2 className="text-sm font-bold text-white tracking-tight">Website Performance Overview</h2>
+                      <p className="text-[10px] text-brand-text-muted mt-0.5">Real-time statistics & dynamic visitor actions tracker.</p>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={loadData}
+                      disabled={isOverviewLoading}
+                      leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isOverviewLoading ? 'animate-spin' : ''}`} />}
+                    >
+                      {isOverviewLoading ? 'Refreshing...' : 'Refresh Stats'}
+                    </Button>
                   </div>
 
-                  {/* Dynamic system info logs */}
-                  <Card hoverEffect={false} className="p-5 border border-brand-border-white bg-brand-card-dark/25">
-                    <h3 className="text-sm font-bold text-white mb-4 tracking-tight border-l-2 border-brand-accent pl-2">
-                      Recent Contact Messages
-                    </h3>
-                    {messages.length > 0 ? (
-                      <div className="space-y-3.5">
-                        {messages.slice(-3).reverse().map((msg) => (
-                          <div key={msg.id} className="flex items-start justify-between border-b border-brand-border-white pb-3 last:border-0 last:pb-0 text-xs">
-                            <div>
-                              <p className="font-bold text-white">{msg.name} <span className="text-[9px] text-brand-text-muted font-normal">({msg.email})</span></p>
-                              <p className="text-[10px] text-brand-text-muted font-medium mt-1">Subject: {msg.subject}</p>
-                            </div>
-                            <Button variant="secondary" size="sm" className="text-[10px] py-1! px-2.5!" onClick={() => openMessageModal(msg)}>
-                              View Inbox
-                            </Button>
+                  {overviewError && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-xs flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span>{overviewError}</span>
+                      </div>
+                      <Button variant="secondary" size="sm" onClick={loadData} className="py-1 px-2">Retry</Button>
+                    </div>
+                  )}
+
+                  {isOverviewLoading ? (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map(n => (
+                          <div key={n} className="animate-pulse bg-brand-card/30 border border-brand-border-white/5 rounded-xl p-4 space-y-3">
+                            <div className="h-3 bg-white/5 rounded w-1/3" />
+                            <div className="h-6 bg-white/10 rounded w-1/2" />
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-xs text-brand-text-muted italic">No contact submissions received yet.</p>
-                    )}
-                  </Card>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="animate-pulse bg-brand-card/30 border border-brand-border-white/5 rounded-xl h-64" />
+                        <div className="animate-pulse bg-brand-card/30 border border-brand-border-white/5 rounded-xl h-64" />
+                      </div>
+                    </div>
+                  ) : (() => {
+                    const stats = overviewStats || {};
+                    const vis = stats.visitors || { totalPageViews: 0, totalUniqueVisitors: 0, todayVisitors: 0, thisWeekVisitors: 0, thisMonthVisitors: 0, activeVisitorsNow: 0 };
+                    const usr = stats.users || { totalUsers: 0, newUsersToday: 0, activeUsers: 0, blockedUsers: 0 };
+                    const blg = stats.blogs || { totalBlogs: 0, publishedBlogs: 0, draftBlogs: 0, archivedBlogs: 0 };
+                    const prj = stats.projects || { totalProjects: 0, publishedProjects: 0, draftProjects: 0, archivedProjects: 0 };
+                    const eng = stats.engagement || { totalLikes: 0, totalComments: 0, pendingComments: 0, approvedComments: 0 };
+                    const msg = stats.messages || { totalMessages: 0, newMessages: 0, readMessages: 0, archivedMessages: 0 };
+                    const med = stats.media || { totalMediaUploads: 0 };
+
+                    const formatTimeAgo = (dateStr: string) => {
+                      const d = new Date(dateStr);
+                      const diffMs = new Date().getTime() - d.getTime();
+                      const seconds = Math.floor(diffMs / 1000);
+                      if (seconds < 60) return 'Just now';
+                      const minutes = Math.floor(seconds / 60);
+                      if (minutes < 60) return `${minutes}m ago`;
+                      const hours = Math.floor(minutes / 60);
+                      if (hours < 24) return `${hours}h ago`;
+                      return d.toLocaleDateString();
+                    };
+
+                    return (
+                      <div className="space-y-6">
+                        {/* 1. VISITOR ANALYTICS SECTION */}
+                        <div className="space-y-3">
+                          <h3 className="text-[10px] font-bold text-brand-text-muted tracking-wider uppercase border-l-2 border-brand-accent pl-2">
+                            Visitor Analytics
+                          </h3>
+                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Total Page Views</p>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{vis.totalPageViews}</p>
+                              </div>
+                              <div className="p-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl">
+                                <Eye className="w-4 h-4" />
+                              </div>
+                            </Card>
+
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Unique Visitors</p>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{vis.totalUniqueVisitors}</p>
+                              </div>
+                              <div className="p-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-xl">
+                                <Users className="w-4 h-4" />
+                              </div>
+                            </Card>
+
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Today Visitors</p>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{vis.todayVisitors}</p>
+                              </div>
+                              <div className="p-2 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl">
+                                <TrendingUp className="w-4 h-4" />
+                              </div>
+                            </Card>
+
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between relative overflow-hidden">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase flex items-center gap-1.5">
+                                  Active Now 
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-ping" />
+                                </p>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{vis.activeVisitorsNow}</p>
+                              </div>
+                              <div className="p-2 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl">
+                                <Activity className="w-4 h-4" />
+                              </div>
+                            </Card>
+                          </div>
+                        </div>
+
+                        {/* 2. USER ANALYTICS SECTION */}
+                        <div className="space-y-3">
+                          <h3 className="text-[10px] font-bold text-brand-text-muted tracking-wider uppercase border-l-2 border-brand-accent pl-2">
+                            User Analytics
+                          </h3>
+                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Registered Users</p>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{usr.totalUsers}</p>
+                              </div>
+                              <div className="p-2 bg-brand-accent/10 border border-brand-accent/20 text-brand-accent rounded-xl">
+                                <Users className="w-4 h-4" />
+                              </div>
+                            </Card>
+
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">New Users Today</p>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{usr.newUsersToday}</p>
+                              </div>
+                              <div className="p-2 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl">
+                                <UserCheck className="w-4 h-4" />
+                              </div>
+                            </Card>
+
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Active Accounts</p>
+                                <p className="text-xl font-extrabold text-green-400 mt-1 leading-none">{usr.activeUsers}</p>
+                              </div>
+                              <div className="p-2 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl">
+                                <ShieldCheck className="w-4 h-4" />
+                              </div>
+                            </Card>
+
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Blocked Accounts</p>
+                                <p className="text-xl font-extrabold text-red-400 mt-1 leading-none">{usr.blockedUsers}</p>
+                              </div>
+                              <div className="p-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
+                                <ShieldAlert className="w-4 h-4" />
+                              </div>
+                            </Card>
+                          </div>
+                        </div>
+
+                        {/* 3. CONTENT & ENGAGEMENT GRID */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Content metrics */}
+                          <div className="space-y-3">
+                            <h3 className="text-[10px] font-bold text-brand-text-muted tracking-wider uppercase border-l-2 border-brand-accent pl-2">
+                              Content Analytics
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4">
+                              <Card hoverEffect className="p-4 border border-brand-border-white/5">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-[9px] text-brand-text-muted font-bold uppercase">Blog Articles</p>
+                                  <div className="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg">
+                                    <BookOpen className="w-3.5 h-3.5" />
+                                  </div>
+                                </div>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{blg.totalBlogs}</p>
+                                <div className="flex items-center gap-3 mt-3 text-[10px] text-brand-text-muted font-medium">
+                                  <span>Published: <strong className="text-white">{blg.publishedBlogs}</strong></span>
+                                  <span>Drafts: <strong className="text-white">{blg.draftBlogs}</strong></span>
+                                </div>
+                              </Card>
+
+                              <Card hoverEffect className="p-4 border border-brand-border-white/5">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-[9px] text-brand-text-muted font-bold uppercase">Portfolio Projects</p>
+                                  <div className="p-1.5 bg-brand-accent/10 text-brand-accent rounded-lg">
+                                    <Briefcase className="w-3.5 h-3.5" />
+                                  </div>
+                                </div>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{prj.totalProjects}</p>
+                                <div className="flex items-center gap-3 mt-3 text-[10px] text-brand-text-muted font-medium">
+                                  <span>Completed: <strong className="text-white">{prj.publishedProjects}</strong></span>
+                                  <span>Progress: <strong className="text-white">{prj.draftProjects}</strong></span>
+                                </div>
+                              </Card>
+                            </div>
+                          </div>
+
+                          {/* Engagement metrics */}
+                          <div className="space-y-3">
+                            <h3 className="text-[10px] font-bold text-brand-text-muted tracking-wider uppercase border-l-2 border-brand-accent pl-2">
+                              Engagement Analytics
+                            </h3>
+                            <div className="grid grid-cols-3 gap-4">
+                              <Card hoverEffect className="p-4 border border-brand-border-white/5">
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Total Likes</p>
+                                <p className="text-lg font-extrabold text-white mt-1 leading-none flex items-center gap-1.5">
+                                  <ThumbsUp className="w-3.5 h-3.5 text-blue-400" />
+                                  {eng.totalLikes}
+                                </p>
+                              </Card>
+
+                              <Card hoverEffect className="p-4 border border-brand-border-white/5">
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Comments</p>
+                                <p className="text-lg font-extrabold text-white mt-1 leading-none flex items-center gap-1.5">
+                                  <MessageSquare className="w-3.5 h-3.5 text-purple-400" />
+                                  {eng.totalComments}
+                                </p>
+                              </Card>
+
+                              <Card hoverEffect className={`p-4 border ${eng.pendingComments > 0 ? 'border-amber-500/20 bg-amber-500/5' : 'border-brand-border-white/5'}`}>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Pending</p>
+                                <p className={`text-lg font-extrabold mt-1 leading-none flex items-center gap-1.5 ${eng.pendingComments > 0 ? 'text-amber-400' : 'text-white'}`}>
+                                  <AlertTriangle className={`w-3.5 h-3.5 ${eng.pendingComments > 0 ? 'text-amber-400' : 'text-brand-text-muted'}`} />
+                                  {eng.pendingComments}
+                                </p>
+                              </Card>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 4. MESSAGES & MEDIA SECTION */}
+                        <div className="space-y-3">
+                          <h3 className="text-[10px] font-bold text-brand-text-muted tracking-wider uppercase border-l-2 border-brand-accent pl-2">
+                            Messages & Media
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Inbox Messages</p>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{msg.totalMessages}</p>
+                              </div>
+                              <div className="p-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl">
+                                <Mail className="w-4 h-4" />
+                              </div>
+                            </Card>
+
+                            <Card hoverEffect className={`p-4 border ${msg.newMessages > 0 ? 'border-green-500/20 bg-green-500/5' : 'border-brand-border-white/5'} flex items-center justify-between`}>
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Unread Messages</p>
+                                <p className={`text-xl font-extrabold mt-1 leading-none ${msg.newMessages > 0 ? 'text-green-400' : 'text-white'}`}>{msg.newMessages}</p>
+                              </div>
+                              <div className={`p-2 rounded-xl border ${msg.newMessages > 0 ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-brand-card-light border-brand-border-white text-brand-text-muted'}`}>
+                                <Mail className="w-4 h-4" />
+                              </div>
+                            </Card>
+
+                            <Card hoverEffect className="p-4 border border-brand-border-white/5 flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-brand-text-muted font-bold uppercase">Media Library Uploads</p>
+                                <p className="text-xl font-extrabold text-white mt-1 leading-none">{med.totalMediaUploads}</p>
+                              </div>
+                              <div className="p-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl">
+                                <ImageIcon className="w-4 h-4" />
+                              </div>
+                            </Card>
+                          </div>
+                        </div>
+
+                        {/* 5. TABLES AND CHARTS SECTION */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                          {/* Top viewed pages */}
+                          <Card className="lg:col-span-5 p-5 border border-brand-border-white/5 bg-brand-card-dark/20 flex flex-col justify-between">
+                            <div>
+                              <h4 className="text-xs font-bold text-white mb-4 tracking-tight border-l-2 border-brand-accent pl-2">
+                                Top Visited Pages
+                              </h4>
+                              {analyticsData?.mostViewedPages?.length > 0 ? (
+                                <div className="space-y-3">
+                                  {analyticsData.mostViewedPages.map((page: any, idx: number) => (
+                                    <div key={idx} className="flex items-center justify-between border-b border-brand-border-white/5 pb-2.5 last:border-0 last:pb-0 text-[11px]">
+                                      <div className="max-w-[70%]">
+                                        <p className="font-semibold text-white truncate">{page.pageTitle || 'Untitled Page'}</p>
+                                        <p className="text-[9px] text-brand-text-muted truncate mt-0.5">{page.pageUrl}</p>
+                                      </div>
+                                      <span className="px-2.5 py-1 bg-brand-accent/10 border border-brand-accent/20 text-brand-accent font-bold rounded-lg leading-none">
+                                        {page.count} views
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-brand-text-muted italic py-4">No visitor events recorded yet.</p>
+                              )}
+                            </div>
+                            
+                            {/* Device & Browser Breakdowns */}
+                            {analyticsData?.deviceStats?.length > 0 && (
+                              <div className="border-t border-brand-border-white/5 pt-4 mt-4">
+                                <p className="text-[10px] text-brand-text-muted font-bold uppercase mb-2">Device Distribution</p>
+                                <div className="flex items-center gap-4 text-[10px] text-white">
+                                  {analyticsData.deviceStats.map((device: any, idx: number) => (
+                                    <div key={idx} className="flex items-center gap-1.5">
+                                      <div className={`w-2 h-2 rounded-full ${device.device === 'desktop' ? 'bg-blue-400' : device.device === 'tablet' ? 'bg-purple-400' : 'bg-green-400'}`} />
+                                      <span className="capitalize">{device.device}:</span>
+                                      <strong className="font-bold">{device.count}</strong>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </Card>
+
+                          {/* Recent visits */}
+                          <Card className="lg:col-span-7 p-5 border border-brand-border-white/5 bg-brand-card-dark/20">
+                            <h4 className="text-xs font-bold text-white mb-4 tracking-tight border-l-2 border-brand-accent pl-2">
+                              Recent Activity Logs
+                            </h4>
+                            {analyticsData?.recentVisits?.length > 0 ? (
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse text-[10px]">
+                                  <thead>
+                                    <tr className="text-brand-text-muted font-bold border-b border-brand-border-white/5 pb-2">
+                                      <th className="pb-2">User / Visitor</th>
+                                      <th className="pb-2">Viewed Page</th>
+                                      <th className="pb-2">Client Details</th>
+                                      <th className="pb-2 text-right">Time</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-brand-border-white/5 text-white/90">
+                                    {analyticsData.recentVisits.map((visit: any, idx: number) => {
+                                      const userName = visit.userId ? visit.userId.name : `Visitor (..${visit.visitorId.slice(-4)})`;
+                                      const userRole = visit.userId ? 'Registered' : 'Anonymous';
+
+                                      return (
+                                        <tr key={idx} className="hover:bg-brand-card-light/10 transition-colors">
+                                          <td className="py-2 pr-2">
+                                            <p className="font-bold">{userName}</p>
+                                            <p className="text-[8px] text-brand-text-muted leading-none mt-0.5">{userRole}</p>
+                                          </td>
+                                          <td className="py-2 pr-2 max-w-[150px] truncate">
+                                            <p className="truncate font-medium">{visit.pageTitle || 'Untitled Page'}</p>
+                                            <p className="text-[8px] text-brand-text-muted truncate mt-0.5">{visit.pageUrl.replace(/^(?:\/\/|[^\/]+)*\//, '/')}</p>
+                                          </td>
+                                          <td className="py-2 pr-2 text-brand-text-muted">
+                                            <span className="capitalize">{visit.device}</span> • <span>{visit.browser}</span>
+                                          </td>
+                                          <td className="py-2 text-right font-medium text-brand-text-muted whitespace-nowrap">
+                                            {formatTimeAgo(visit.visitedAt)}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-brand-text-muted italic py-4">No visitor events recorded yet.</p>
+                            )}
+                          </Card>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
