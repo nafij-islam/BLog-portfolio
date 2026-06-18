@@ -1,3 +1,4 @@
+// Trigger deploy: clean layout without AI agent
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
