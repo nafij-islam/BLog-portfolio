@@ -3,7 +3,7 @@ import connectDB from '@/lib/mongodb';
 import MediaAsset from '@/models/MediaAsset';
 import { AuthHelper } from '@/lib/auth';
 import { ApiResponse } from '@/lib/api-response';
-import { ImgBBHelper } from '@/lib/imgbb';
+import { CloudinaryHelper } from '@/lib/cloudinary';
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       const base64 = buffer.toString('base64');
       const base64String = `data:${file.type};base64,${base64}`;
 
-      const uploadResult = await ImgBBHelper.uploadImage(base64String);
+      const uploadResult = await CloudinaryHelper.uploadImage(base64String, folder);
 
       const media = await MediaAsset.create({
         uploadedBy: payload.userId,
