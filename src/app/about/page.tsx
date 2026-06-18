@@ -94,7 +94,7 @@ export default function AboutPage() {
                     Get In Touch
                   </Button>
                 </Link>
-                <a href={siteSettings?.cvUrl || "#"} download>
+                <a href="/nafij-resume.pdf" download="Nafij_Islam_Resume.pdf">
                   <Button variant="secondary" size="md" leftIcon={<Download className="w-4 h-4" />}>
                     Download CV
                   </Button>
