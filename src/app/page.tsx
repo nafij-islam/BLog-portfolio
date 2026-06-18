@@ -141,7 +141,7 @@ export default function HomePage() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative w-72 h-72 md:w-85 md:h-85 rounded-3xl bg-gradient-to-tr from-brand-card to-brand-card-light p-1 border border-brand-accent/25 glow-accent flex items-center justify-center overflow-hidden"
+              className="relative z-10 w-72 h-72 md:w-85 md:h-85 rounded-3xl bg-gradient-to-tr from-brand-card to-brand-card-light p-1 border border-brand-accent/25 glow-accent flex items-center justify-center overflow-hidden"
             >
               {/* Inner glowing core */}
               <div className="absolute inset-0 bg-radial-gradient from-brand-accent/20 to-transparent pointer-events-none" />
@@ -158,7 +158,7 @@ export default function HomePage() {
             <motion.div
               animate={{ y: [0, -12, 0] }}
               transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
-              className="absolute -top-4 -left-4 md:-top-6 bg-brand-card/90 backdrop-blur border border-brand-border px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2"
+              className="absolute z-20 -top-4 -left-4 md:-top-6 bg-brand-card/90 backdrop-blur border border-brand-border px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2"
             >
               <div className="p-1.5 bg-brand-accent/15 rounded-lg text-brand-accent">
                 <Code className="w-4.5 h-4.5" />
@@ -172,7 +172,7 @@ export default function HomePage() {
             <motion.div
               animate={{ y: [0, 15, 0] }}
               transition={{ repeat: Infinity, duration: 8, ease: 'easeInOut', delay: 1 }}
-              className="absolute bottom-6 -right-6 bg-brand-card/90 backdrop-blur border border-brand-border px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2"
+              className="absolute z-20 bottom-6 -right-6 bg-brand-card/90 backdrop-blur border border-brand-border px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2"
             >
               <div className="p-1.5 bg-blue-500/15 rounded-lg text-blue-400">
                 <Layers className="w-4.5 h-4.5" />
@@ -186,7 +186,7 @@ export default function HomePage() {
             <motion.div
               animate={{ x: [0, 10, 0] }}
               transition={{ repeat: Infinity, duration: 7, ease: 'easeInOut', delay: 0.5 }}
-              className="absolute -bottom-4 -left-6 bg-brand-card/90 backdrop-blur border border-brand-border px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2"
+              className="absolute z-20 -bottom-4 -left-6 bg-brand-card/90 backdrop-blur border border-brand-border px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2"
             >
               <div className="p-1.5 bg-green-500/15 rounded-lg text-green-400">
                 <ShoppingBag className="w-4.5 h-4.5" />
