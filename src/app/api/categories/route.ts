@@ -7,7 +7,7 @@ import { ApiResponse } from '@/lib/api-response';
 export async function GET() {
   try {
     await connectDB();
-    let categories = await Category.find({});
+    let categories = await Category.find({}).lean();
     if (categories.length === 0) {
       const defaults = ['Frontend', 'Shopify', 'Bubble.io', 'SEO', 'UI/UX'];
       categories = await Category.insertMany(

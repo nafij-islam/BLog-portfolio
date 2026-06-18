@@ -6,9 +6,9 @@ import { ApiResponse } from '@/lib/api-response';
 export async function GET() {
   try {
     await connectDB();
-    let projects = await Project.find({ isFeatured: true }).limit(3);
+    let projects = await Project.find({ isFeatured: true }).limit(3).lean();
     if (projects.length === 0) {
-      projects = await Project.find({}).sort({ createdAt: -1 }).limit(3);
+      projects = await Project.find({}).sort({ createdAt: -1 }).limit(3).lean();
     }
 
     const formatted = projects.map(p => ({

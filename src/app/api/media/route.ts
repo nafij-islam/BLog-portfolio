@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       filter.fileName = { $regex: search, $options: 'i' };
     }
 
-    const media = await MediaAsset.find(filter).populate('uploadedBy', 'name').sort({ createdAt: -1 });
+    const media = await MediaAsset.find(filter).populate('uploadedBy', 'name').sort({ createdAt: -1 }).lean();
 
     const formatted = media.map(m => ({
       id: m._id.toString(),

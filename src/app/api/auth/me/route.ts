@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return ApiResponse.unauthorized('Not authenticated');
     }
 
-    const user = await User.findById(payload.userId);
+    const user = await User.findById(payload.userId).lean();
     if (!user) {
       return ApiResponse.unauthorized('User not found');
     }
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       return ApiResponse.error('Your account has been suspended by the admin.', 403);
     }
 
-    const userLikes = await Like.find({ userId: user._id });
+    const userLikes = await Like.find({ userId: user._id }).lean();
     const likedBlogs = userLikes.map(l => l.blogId.toString());
 
     const userSession = {
@@ -32,6 +32,10 @@ export async function GET(req: NextRequest) {
       role: user.role,
       status: user.status,
       avatar: user.avatarUrl,
+      bio: user.bio || '',
+      profession: user.profession || '',
+      website: user.website || '',
+      socialLinks: user.socialLinks || { github: '', linkedin: '', twitter: '' },
       createdAt: user.createdAt.toISOString(),
       savedBlogs: [],
       likedBlogs,
@@ -62,7 +66,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { name, avatar } = body;
+    const { name, avatar, avatarUrl, bio, profession, website, socialLinks } = body;
 
     if (name !== undefined) {
       if (!name.trim()) {
@@ -71,13 +75,25 @@ export async function PUT(req: NextRequest) {
       user.name = name;
     }
 
-    if (avatar !== undefined) {
-      user.avatarUrl = avatar;
+    const finalAvatar = avatarUrl !== undefined ? avatarUrl : avatar;
+    if (finalAvatar !== undefined) {
+      user.avatarUrl = finalAvatar;
+    }
+
+    if (bio !== undefined) user.bio = bio;
+    if (profession !== undefined) user.profession = profession;
+    if (website !== undefined) user.website = website;
+    if (socialLinks !== undefined) {
+      user.socialLinks = {
+        github: socialLinks.github !== undefined ? socialLinks.github : (user.socialLinks?.github || ''),
+        linkedin: socialLinks.linkedin !== undefined ? socialLinks.linkedin : (user.socialLinks?.linkedin || ''),
+        twitter: socialLinks.twitter !== undefined ? socialLinks.twitter : (user.socialLinks?.twitter || ''),
+      };
     }
 
     await user.save();
 
-    const userLikes = await Like.find({ userId: user._id });
+    const userLikes = await Like.find({ userId: user._id }).lean();
     const likedBlogs = userLikes.map(l => l.blogId.toString());
 
     const userSession = {
@@ -87,6 +103,10 @@ export async function PUT(req: NextRequest) {
       role: user.role,
       status: user.status,
       avatar: user.avatarUrl,
+      bio: user.bio || '',
+      profession: user.profession || '',
+      website: user.website || '',
+      socialLinks: user.socialLinks || { github: '', linkedin: '', twitter: '' },
       createdAt: user.createdAt.toISOString(),
       savedBlogs: [],
       likedBlogs,

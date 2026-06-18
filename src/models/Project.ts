@@ -55,4 +55,8 @@ const ProjectSchema = new Schema<IProject>(
   { timestamps: true }
 );
 
+ProjectSchema.index({ slug: 1 });
+ProjectSchema.index({ status: 1 });
+ProjectSchema.index({ isFeatured: 1 });
+
 export default models.Project || model<IProject>('Project', ProjectSchema);

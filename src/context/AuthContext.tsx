@@ -6,7 +6,7 @@ import { User } from '../data/types';
 interface AuthContextType {
   user: User | null;
   login: (email: string, passwordHash: string) => Promise<boolean>;
-  register: (name: string, email: string, passwordHash: string) => Promise<boolean>;
+  register: (name: string, email: string, passwordHash: string, avatarUrl?: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
   refreshUser: () => void;
@@ -63,13 +63,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return false;
   };
 
-  const register = async (name: string, email: string, passwordHash: string): Promise<boolean> => {
+  const register = async (name: string, email: string, passwordHash: string, avatarUrl?: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password: passwordHash }),
+        body: JSON.stringify({ name, email, password: passwordHash, avatarUrl }),
       });
 
       const json = await res.json();

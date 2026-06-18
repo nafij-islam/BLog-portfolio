@@ -14,6 +14,7 @@ import Button from '@/components/Button';
 import Card from '@/components/Card';
 import LoadingState from '@/components/LoadingState';
 import BlogCard from '@/components/BlogCard';
+import OptimizedImage from '@/components/OptimizedImage';
 
 export default function BlogDetailPage() {
   const params = useParams();
@@ -200,10 +201,12 @@ export default function BlogDetailPage() {
           {/* Main article image */}
           {blog.image && (
             <div className="relative aspect-video rounded-3xl overflow-hidden border border-brand-border-white mb-8 shadow-2xl">
-              <img
+              <OptimizedImage
                 src={blog.image}
                 alt={blog.title}
-                className="w-full h-full object-cover object-center"
+                fill
+                sizes="(max-width: 768px) 100vw, 800px"
+                className="object-cover object-center"
               />
             </div>
           )}

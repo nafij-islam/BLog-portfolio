@@ -14,7 +14,16 @@ export default function BlogListingPage() {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [filteredBlogs, setFilteredBlogs] = useState<BlogPost[]>([]);
 
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Frontend' | 'Shopify' | 'Bubble.io' | 'SEO' | 'UI/UX'>('All');
 
   useEffect(() => {
@@ -110,8 +119,8 @@ export default function BlogListingPage() {
               <input
                 type="text"
                 placeholder="Search articles..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
               />
             </div>
@@ -132,6 +141,7 @@ export default function BlogListingPage() {
               title="No articles found"
               message="No blog posts match your search or filter. Try looking under alternative categories or query standard terms like layout or performance."
               onAction={() => {
+                setSearchInput('');
                 setSearchQuery('');
                 setSelectedCategory('All');
               }}

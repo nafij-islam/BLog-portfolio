@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
     const comments = await Comment.find(query)
       .populate('userId', 'name email avatarUrl')
       .populate('blogId', 'title')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     const formatted = comments.map((c: any) => ({
       id: c._id.toString(),

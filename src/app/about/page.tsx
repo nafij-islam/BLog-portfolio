@@ -10,6 +10,7 @@ import Footer from '@/components/Footer';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import SectionHeading from '@/components/SectionHeading';
+import OptimizedImage from '@/components/OptimizedImage';
 
 export default function AboutPage() {
   const [siteSettings, setSiteSettings] = useState<any>(null);
@@ -107,10 +108,12 @@ export default function AboutPage() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-brand-card-dark to-brand-card-light pointer-events-none" />
                 
                 {/* Visual Avatar Placeholder */}
-                <img
+                <OptimizedImage
                   src="https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=500&q=80"
                   alt="Nafij Creative Office"
-                  className="w-full h-full object-cover rounded-2xl opacity-85 hover:scale-103 transition-transform duration-500"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 385px"
+                  className="object-cover rounded-2xl opacity-85 hover:scale-103 transition-transform duration-500"
                 />
               </div>
 

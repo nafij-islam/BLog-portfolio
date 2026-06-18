@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import LoadingState from '@/components/LoadingState';
+import OptimizedImage from '@/components/OptimizedImage';
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -133,10 +134,13 @@ export default function ProjectDetailsPage() {
 
           {/* Project Main visual banner */}
           <div className="relative aspect-video rounded-3xl overflow-hidden border border-brand-border-white mb-12 shadow-2xl">
-            <img
+            <OptimizedImage
               src={project.image}
               alt={project.title}
-              className="w-full h-full object-cover object-center"
+              fill
+              priority
+              sizes="(max-width: 1200px) 100vw, 1200px"
+              className="object-cover object-center"
             />
           </div>
 

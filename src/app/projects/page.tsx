@@ -14,7 +14,16 @@ export default function ProjectsListingPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Frontend' | 'Shopify' | 'Bubble.io' | 'UI/UX'>('All');
 
   useEffect(() => {
@@ -109,8 +118,8 @@ export default function ProjectsListingPage() {
               <input
                 type="text"
                 placeholder="Search projects by tag or title..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
               />
             </div>
@@ -131,6 +140,7 @@ export default function ProjectsListingPage() {
               title="No projects match your criteria"
               message="We couldn't find any projects fitting that category or query. Try searching for other technologies like React, Liquid, or Stripe."
               onAction={() => {
+                setSearchInput('');
                 setSearchQuery('');
                 setSelectedCategory('All');
               }}

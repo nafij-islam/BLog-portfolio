@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { ApiService } from '@/lib/api-service';
 import Button from './Button';
 
 interface AuthFormProps {
@@ -23,8 +24,31 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
 
   const isLogin = mode === 'login';
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      showToast('Only PNG, JPG, JPEG, and WEBP formats are supported.', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size exceeds 5MB limit.', 'error');
+      return;
+    }
+
+    setAvatarFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setAvatarPreview(objectUrl);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +81,6 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
         const success = await login(email, password);
         if (success) {
           showToast('Successfully logged in!', 'success');
-          // In mock context, fetching active user
           const stored = localStorage.getItem('portfolio_logged_in_user');
           if (stored) {
             const parsed = JSON.parse(stored);
@@ -73,7 +96,18 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
           showToast('Invalid email or password.', 'error');
         }
       } else {
-        const success = await register(name, email, password);
+        let uploadedAvatarUrl = undefined;
+        if (avatarFile) {
+          try {
+            const uploadResult = await ApiService.uploadImage(avatarFile, 'avatar');
+            uploadedAvatarUrl = uploadResult.url;
+          } catch (uploadErr: any) {
+            console.error('Avatar upload failed:', uploadErr);
+            showToast(uploadErr.message || 'Avatar upload failed. Registering without photo.', 'warning');
+          }
+        }
+
+        const success = await register(name, email, password, uploadedAvatarUrl);
         if (success) {
           showToast('Registration successful! Welcome.', 'success');
           router.push('/dashboard');
@@ -113,19 +147,41 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
       <form onSubmit={handleSubmit} className="space-y-4 relative">
         {/* Name input (Register only) */}
         {!isLogin && (
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-white/90">Full Name</label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-brand-text-muted" />
-              <input
-                type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 text-sm bg-brand-card-dark border border-brand-border-white rounded-xl text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
-              />
+          <>
+            <div className="flex flex-col items-center justify-center space-y-2 pb-3 border-b border-brand-border/40">
+              <div className="relative group w-20 h-20 rounded-full overflow-hidden border-2 border-brand-accent/30 hover:border-brand-accent transition-colors bg-brand-card-dark flex items-center justify-center">
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8 text-brand-text-muted" />
+                )}
+                <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer transition-opacity">
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              <span className="text-[10px] text-brand-text-muted">Optional Profile Picture (Max 5MB)</span>
             </div>
-          </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-white/90">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-brand-text-muted" />
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full pl-11 pr-4 py-2.5 text-sm bg-brand-card-dark border border-brand-border-white rounded-xl text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                />
+              </div>
+            </div>
+          </>
         )}
 
         {/* Email input */}

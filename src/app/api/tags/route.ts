@@ -7,7 +7,7 @@ import { ApiResponse } from '@/lib/api-response';
 export async function GET() {
   try {
     await connectDB();
-    const tags = await Tag.find({});
+    const tags = await Tag.find({}).lean();
     return ApiResponse.success(tags, 'Tags fetched successfully');
   } catch (err: any) {
     console.error('Fetch tags error:', err);

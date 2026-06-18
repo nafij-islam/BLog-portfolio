@@ -8,7 +8,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     await connectDB();
     const { id } = await params;
-    const blog = await Blog.findById(id).populate('author', 'name avatarUrl role');
+    const blog = await Blog.findById(id).populate('author', 'name avatarUrl role').lean();
     if (!blog) {
       return ApiResponse.notFound('Article not found');
     }

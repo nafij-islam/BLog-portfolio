@@ -24,10 +24,16 @@ import {
   Globe,
   Save,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Camera,
+  Github,
+  Linkedin,
+  Twitter,
+  Search
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { ApiService } from '@/lib/api-service';
 import { Project, BlogPost, Comment, User, ContactMessage, SiteSettings } from '@/data/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -58,6 +64,78 @@ export default function AdminDashboard() {
 
   // Loading indicator for actions
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // Admin search and pagination states
+  const [adminSearchInput, setAdminSearchInput] = useState('');
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAdminSearchQuery(adminSearchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [adminSearchInput]);
+
+  useEffect(() => {
+    setAdminSearchInput('');
+    setAdminSearchQuery('');
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [adminSearchQuery]);
+
+  const renderSearchBar = (placeholder: string) => (
+    <div className="relative w-full max-w-xs">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-text-muted" />
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={adminSearchInput}
+        onChange={(e) => setAdminSearchInput(e.target.value)}
+        className="w-full pl-9 pr-4 py-2 text-[11px] bg-brand-card-dark border border-brand-border-white rounded-xl text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+      />
+    </div>
+  );
+
+  const renderPagination = (totalItems: number) => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    if (totalPages <= 1) return null;
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+
+    return (
+      <div className="flex items-center justify-between pt-4 border-t border-brand-border-white/5 mt-4">
+        <span className="text-[10px] text-brand-text-muted">
+          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} items
+        </span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            className="py-1! px-2.5!"
+          >
+            Previous
+          </Button>
+          <span className="text-[10px] text-white font-bold">{currentPage} / {totalPages}</span>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            className="py-1! px-2.5!"
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    );
+  };
 
   // Modals States
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -144,6 +222,14 @@ export default function AdminDashboard() {
   // Admin Profile Edit States
   const [aName, setAName] = useState('');
   const [aAvatar, setAAvatar] = useState('');
+  const [aProfession, setAProfession] = useState('');
+  const [aBio, setABio] = useState('');
+  const [aWebsite, setAWebsite] = useState('');
+  const [aGithub, setAGithub] = useState('');
+  const [aLinkedin, setALinkedin] = useState('');
+  const [aTwitter, setATwitter] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
 
   // Session protect check
   useEffect(() => {
@@ -260,6 +346,13 @@ export default function AdminDashboard() {
       if (user) {
         setAName(user.name);
         setAAvatar(user.avatar || '');
+        setAProfession(user.profession || '');
+        setABio(user.bio || '');
+        setAWebsite(user.website || '');
+        setAGithub(user.socialLinks?.github || '');
+        setALinkedin(user.socialLinks?.linkedin || '');
+        setATwitter(user.socialLinks?.twitter || '');
+        setAvatarPreview(user.avatar || '');
       }
     } catch (error) {
       console.error('Failed to load admin gateway data:', error);
@@ -850,6 +943,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      showToast('Only PNG, JPG, JPEG, and WEBP formats are supported.', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size exceeds 5MB limit.', 'error');
+      return;
+    }
+
+    setAvatarFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setAvatarPreview(objectUrl);
+  };
+
   // Profile Edit Submission
   const handleAdminProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -860,10 +973,37 @@ export default function AdminDashboard() {
 
     setIsActionLoading(true);
     try {
+      let finalAvatarUrl = aAvatar;
+
+      if (avatarFile) {
+        try {
+          const uploadResult = await ApiService.uploadImage(avatarFile, 'avatar');
+          finalAvatarUrl = uploadResult.url;
+          setAAvatar(finalAvatarUrl);
+          setAvatarFile(null);
+        } catch (uploadErr: any) {
+          console.error('Admin avatar upload failed:', uploadErr);
+          showToast(uploadErr.message || 'Image upload failed. Settings not saved.', 'error');
+          setIsActionLoading(false);
+          return;
+        }
+      }
+
       const res = await fetch('/api/auth/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: aName, avatar: aAvatar }),
+        body: JSON.stringify({
+          name: aName,
+          avatar: finalAvatarUrl,
+          bio: aBio,
+          profession: aProfession,
+          website: aWebsite,
+          socialLinks: {
+            github: aGithub,
+            linkedin: aLinkedin,
+            twitter: aTwitter
+          }
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -1035,271 +1175,332 @@ export default function AdminDashboard() {
               )}
 
               {/* TAB 2: MANAGE PROJECTS */}
-              {activeTab === 'projects' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-brand-text-muted">{projects.length} Projects Loaded</span>
-                    <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => openProjectModal(null)}>
-                      Add Project
-                    </Button>
-                  </div>
+              {activeTab === 'projects' && (() => {
+                const filtered = projects.filter(p =>
+                  !adminSearchQuery ||
+                  p.title.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+                  p.category.toLowerCase().includes(adminSearchQuery.toLowerCase())
+                );
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
 
-                  {projects.length > 0 ? (
-                    <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
-                            <th className="p-4">Title</th>
-                            <th className="p-4">Category</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
-                          {projects.map((p) => (
-                            <tr key={p.id} className="hover:bg-brand-card-light/40 transition-colors">
-                              <td className="p-4 font-bold text-white">{p.title}</td>
-                              <td className="p-4">{p.category}</td>
-                              <td className="p-4">
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${p.status === 'Completed' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
-                                  {p.status}
-                                </span>
-                              </td>
-                              <td className="p-4 text-right flex justify-end gap-2">
-                                <button className="p-1.5 text-blue-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => openProjectModal(p)}>
-                                  <Edit className="w-3.5 h-3.5" />
-                                </button>
-                                <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerProjectDelete(p.id, p.title)}>
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-card/40 p-4 rounded-xl border border-brand-border-white/5">
+                      {renderSearchBar('Search projects...')}
+                      <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => openProjectModal(null)}>
+                        Add Project
+                      </Button>
                     </div>
-                  ) : (
-                    <EmptyState title="No Projects available" message="Click 'Add Project' to seed your first portfolio showcase item." />
-                  )}
-                </div>
-              )}
+
+                    {filtered.length > 0 ? (
+                      <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
+                              <th className="p-4">Title</th>
+                              <th className="p-4">Category</th>
+                              <th className="p-4">Status</th>
+                              <th className="p-4 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
+                            {paginated.map((p) => (
+                              <tr key={p.id} className="hover:bg-brand-card-light/40 transition-colors">
+                                <td className="p-4 font-bold text-white">{p.title}</td>
+                                <td className="p-4">{p.category}</td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${p.status === 'Completed' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                                    {p.status}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right flex justify-end gap-2">
+                                  <button className="p-1.5 text-blue-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => openProjectModal(p)}>
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerProjectDelete(p.id, p.title)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <EmptyState title="No Projects found" message="No portfolio projects match your criteria." />
+                    )}
+                    {renderPagination(filtered.length)}
+                  </div>
+                );
+              })()}
 
               {/* TAB 3: MANAGE BLOGS */}
-              {activeTab === 'blogs' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-brand-text-muted">{blogs.length} Articles Seeded</span>
-                    <div className="flex items-center gap-2">
-                      <Button variant="secondary" size="sm" leftIcon={<Globe className="w-4 h-4" />} onClick={() => setIsImportModalOpen(true)}>
-                        Import Blogs
-                      </Button>
-                      <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => openBlogModal(null)}>
-                        Add Blog Article
-                      </Button>
-                    </div>
-                  </div>
+              {activeTab === 'blogs' && (() => {
+                const filtered = blogs.filter(b =>
+                  !adminSearchQuery ||
+                  b.title.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+                  b.category.toLowerCase().includes(adminSearchQuery.toLowerCase())
+                );
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
 
-                  {blogs.length > 0 ? (
-                    <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
-                            <th className="p-4">Title</th>
-                            <th className="p-4">Category</th>
-                            <th className="p-4 text-center">Status</th>
-                            <th className="p-4 text-center">Likes</th>
-                            <th className="p-4 text-center">Comments</th>
-                            <th className="p-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
-                          {blogs.map((b) => (
-                            <tr key={b.id} className="hover:bg-brand-card-light/40 transition-colors">
-                              <td className="p-4 font-bold text-white max-w-[200px] truncate">{b.title}</td>
-                              <td className="p-4">{b.category}</td>
-                              <td className="p-4 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
-                                  b.status === 'Published' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                }`}>
-                                  {b.status || 'Published'}
-                                </span>
-                              </td>
-                              <td className="p-4 text-center">{b.likes}</td>
-                              <td className="p-4 text-center">{b.commentsCount}</td>
-                              <td className="p-4 text-right flex justify-end gap-2">
-                                <button className="p-1.5 text-blue-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => openBlogModal(b)}>
-                                  <Edit className="w-3.5 h-3.5" />
-                                </button>
-                                <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerBlogDelete(b.id, b.title)}>
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-card/40 p-4 rounded-xl border border-brand-border-white/5">
+                      {renderSearchBar('Search blogs...')}
+                      <div className="flex items-center gap-2">
+                        <Button variant="secondary" size="sm" leftIcon={<Globe className="w-4 h-4" />} onClick={() => setIsImportModalOpen(true)}>
+                          Import Blogs
+                        </Button>
+                        <Button variant="primary" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => openBlogModal(null)}>
+                          Add Blog
+                        </Button>
+                      </div>
                     </div>
-                  ) : (
-                    <EmptyState title="No Blog posts found" message="Launch a new article using the Form parameters editor." />
-                  )}
-                </div>
-              )}
+
+                    {filtered.length > 0 ? (
+                      <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
+                              <th className="p-4">Title</th>
+                              <th className="p-4">Category</th>
+                              <th className="p-4 text-center">Status</th>
+                              <th className="p-4 text-center">Likes</th>
+                              <th className="p-4 text-center">Comments</th>
+                              <th className="p-4 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
+                            {paginated.map((b) => (
+                              <tr key={b.id} className="hover:bg-brand-card-light/40 transition-colors">
+                                <td className="p-4 font-bold text-white max-w-[200px] truncate">{b.title}</td>
+                                <td className="p-4">{b.category}</td>
+                                <td className="p-4 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
+                                    b.status === 'Published' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                  }`}>
+                                    {b.status || 'Published'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-center">{b.likes}</td>
+                                <td className="p-4 text-center">{b.commentsCount}</td>
+                                <td className="p-4 text-right flex justify-end gap-2">
+                                  <button className="p-1.5 text-blue-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => openBlogModal(b)}>
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerBlogDelete(b.id, b.title)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <EmptyState title="No Blogs found" message="No blog articles match your criteria." />
+                    )}
+                    {renderPagination(filtered.length)}
+                  </div>
+                );
+              })()}
 
               {/* TAB 4: MANAGE COMMENTS */}
-              {activeTab === 'comments' && (
-                <div className="space-y-4">
-                  <span className="text-xs text-brand-text-muted">{comments.length} Comments logged</span>
-                  
-                  {comments.length > 0 ? (
-                    <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
-                            <th className="p-4">Author</th>
-                            <th className="p-4">Comment</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
-                          {comments.map((c) => (
-                            <tr key={c.id} className="hover:bg-brand-card-light/40 transition-colors">
-                              <td className="p-4">
-                                <p className="font-bold text-white">{c.userName}</p>
-                                <p className="text-[9px] text-brand-text-muted">{c.userEmail}</p>
-                              </td>
-                              <td className="p-4 max-w-[200px] truncate italic">"{c.content}"</td>
-                              <td className="p-4">
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${c.approved ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                  {c.approved ? 'Approved' : 'Hidden'}
-                                </span>
-                              </td>
-                              <td className="p-4 text-right flex justify-end gap-2">
-                                <button
-                                  onClick={() => toggleCommentApproval(c.id)}
-                                  className={`p-1.5 rounded border border-brand-border-white cursor-pointer ${c.approved ? 'text-amber-400 hover:text-white' : 'text-green-400 hover:text-white'}`}
-                                  title={c.approved ? 'Hide Comment' : 'Approve Comment'}
-                                >
-                                  {c.approved ? <X className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
-                                </button>
-                                <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerCommentDelete(c.id)}>
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+              {activeTab === 'comments' && (() => {
+                const filtered = comments.filter(c =>
+                  !adminSearchQuery ||
+                  c.userName.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+                  c.userEmail.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+                  c.content.toLowerCase().includes(adminSearchQuery.toLowerCase())
+                );
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-card/40 p-4 rounded-xl border border-brand-border-white/5">
+                      {renderSearchBar('Search comments...')}
                     </div>
-                  ) : (
-                    <EmptyState title="No Comments received" message="When visitors leave thoughts on blog detail views, they load here." />
-                  )}
-                </div>
-              )}
+
+                    {filtered.length > 0 ? (
+                      <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
+                              <th className="p-4">Author</th>
+                              <th className="p-4">Comment</th>
+                              <th className="p-4">Status</th>
+                              <th className="p-4 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
+                            {paginated.map((c) => (
+                              <tr key={c.id} className="hover:bg-brand-card-light/40 transition-colors">
+                                <td className="p-4">
+                                  <p className="font-bold text-white">{c.userName}</p>
+                                  <p className="text-[9px] text-brand-text-muted">{c.userEmail}</p>
+                                </td>
+                                <td className="p-4 max-w-[200px] truncate italic">"{c.content}"</td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${c.approved ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                    {c.approved ? 'Approved' : 'Hidden'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right flex justify-end gap-2">
+                                  <button
+                                    onClick={() => toggleCommentApproval(c.id)}
+                                    className={`p-1.5 rounded border border-brand-border-white cursor-pointer ${c.approved ? 'text-amber-400 hover:text-white' : 'text-green-400 hover:text-white'}`}
+                                    title={c.approved ? 'Hide Comment' : 'Approve Comment'}
+                                  >
+                                    {c.approved ? <X className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerCommentDelete(c.id)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <EmptyState title="No Comments found" message="No comments match your search criteria." />
+                    )}
+                    {renderPagination(filtered.length)}
+                  </div>
+                );
+              })()}
 
               {/* TAB 5: MANAGE USERS */}
-              {activeTab === 'users' && (
-                <div className="space-y-4">
-                  <span className="text-xs text-brand-text-muted">{users.length} Users registered</span>
+              {activeTab === 'users' && (() => {
+                const filtered = users.filter(u =>
+                  !adminSearchQuery ||
+                  u.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+                  u.email.toLowerCase().includes(adminSearchQuery.toLowerCase())
+                );
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
 
-                  {users.length > 0 ? (
-                    <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
-                            <th className="p-4">User</th>
-                            <th className="p-4">Role</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
-                          {users.map((u) => (
-                            <tr key={u.id} className="hover:bg-brand-card-light/40 transition-colors">
-                              <td className="p-4 flex items-center gap-2.5">
-                                <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-full object-cover border border-brand-border-white" />
-                                <div>
-                                  <p className="font-bold text-white">{u.name}</p>
-                                  <p className="text-[9px] text-brand-text-muted">{u.email}</p>
-                                </div>
-                              </td>
-                              <td className="p-4">
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                                  {u.role}
-                                </span>
-                              </td>
-                              <td className="p-4">
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${u.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                                  {u.status}
-                                </span>
-                              </td>
-                              <td className="p-4 text-right flex justify-end gap-2">
-                                <Button variant="secondary" className="text-[9px] px-2 py-1! hover:text-white" onClick={() => toggleUserRole(u.id, u.role)}>
-                                  Role toggle
-                                </Button>
-                                <Button variant={u.status === 'active' ? 'outline' : 'primary'} className="text-[9px] px-2 py-1!" onClick={() => toggleUserStatus(u.id, u.status)}>
-                                  {u.status === 'active' ? 'Suspend' : 'Activate'}
-                                </Button>
-                                <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerUserDelete(u.id, u.name)}>
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-card/40 p-4 rounded-xl border border-brand-border-white/5">
+                      {renderSearchBar('Search users by name or email...')}
                     </div>
-                  ) : (
-                    <EmptyState title="No registered users found" message="Default seeded users are missing." />
-                  )}
-                </div>
-              )}
+
+                    {filtered.length > 0 ? (
+                      <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
+                              <th className="p-4">User</th>
+                              <th className="p-4">Role</th>
+                              <th className="p-4">Status</th>
+                              <th className="p-4 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
+                            {paginated.map((u) => (
+                              <tr key={u.id} className="hover:bg-brand-card-light/40 transition-colors">
+                                <td className="p-4 flex items-center gap-2.5">
+                                  <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-full object-cover border border-brand-border-white" />
+                                  <div>
+                                    <p className="font-bold text-white">{u.name}</p>
+                                    <p className="text-[9px] text-brand-text-muted">{u.email}</p>
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                    {u.role}
+                                  </span>
+                                </td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${u.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
+                                    {u.status}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right flex justify-end gap-2">
+                                  <Button variant="secondary" className="text-[9px] px-2 py-1! hover:text-white" onClick={() => toggleUserRole(u.id, u.role)}>
+                                    Role toggle
+                                  </Button>
+                                  <Button variant={u.status === 'active' ? 'outline' : 'primary'} className="text-[9px] px-2 py-1!" onClick={() => toggleUserStatus(u.id, u.status)}>
+                                    {u.status === 'active' ? 'Suspend' : 'Activate'}
+                                  </Button>
+                                  <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerUserDelete(u.id, u.name)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <EmptyState title="No Users found" message="No users match your criteria." />
+                    )}
+                    {renderPagination(filtered.length)}
+                  </div>
+                );
+              })()}
 
               {/* TAB 6: CONTACT MESSAGES */}
-              {activeTab === 'contacts' && (
-                <div className="space-y-4">
-                  <span className="text-xs text-brand-text-muted">{messages.length} Messages in Inbox</span>
+              {activeTab === 'contacts' && (() => {
+                const filtered = messages.filter(m =>
+                  !adminSearchQuery ||
+                  m.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+                  m.email.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+                  m.subject.toLowerCase().includes(adminSearchQuery.toLowerCase())
+                );
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
 
-                  {messages.length > 0 ? (
-                    <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
-                            <th className="p-4">Sender</th>
-                            <th className="p-4">Subject</th>
-                            <th className="p-4">Date</th>
-                            <th className="p-4 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
-                          {messages.map((m) => (
-                            <tr key={m.id} className={`hover:bg-brand-card-light/40 transition-colors ${!m.read ? 'font-bold bg-brand-accent/5' : ''}`}>
-                              <td className="p-4">
-                                <p className="text-white">{m.name}</p>
-                                <p className="text-[9px] text-brand-text-muted font-normal">{m.email}</p>
-                              </td>
-                              <td className="p-4 max-w-[200px] truncate text-white/95">{m.subject}</td>
-                              <td className="p-4 text-brand-text-muted font-normal">{new Date(m.date).toLocaleDateString()}</td>
-                              <td className="p-4 text-right flex justify-end gap-2">
-                                <button className="p-1.5 text-blue-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => openMessageModal(m)}>
-                                  <Eye className="w-3.5 h-3.5" />
-                                </button>
-                                <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerMessageDelete(m.id)}>
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-card/40 p-4 rounded-xl border border-brand-border-white/5">
+                      {renderSearchBar('Search inbox...')}
                     </div>
-                  ) : (
-                    <EmptyState title="Inbox Empty" message="When guests submit queries on your Contact Form page, they show up here." />
-                  )}
-                </div>
-              )}
 
-              {/* TAB 7: SITE SETTINGS */}
+                    {filtered.length > 0 ? (
+                      <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
+                              <th className="p-4">Sender</th>
+                              <th className="p-4">Subject</th>
+                              <th className="p-4">Date</th>
+                              <th className="p-4 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
+                            {paginated.map((m) => (
+                              <tr key={m.id} className={`hover:bg-brand-card-light/40 transition-colors ${!m.read ? 'font-bold bg-brand-accent/5' : ''}`}>
+                                <td className="p-4">
+                                  <p className="text-white">{m.name}</p>
+                                  <p className="text-[9px] text-brand-text-muted font-normal">{m.email}</p>
+                                </td>
+                                <td className="p-4 max-w-[200px] truncate text-white/95">{m.subject}</td>
+                                <td className="p-4 text-brand-text-muted font-normal">{new Date(m.date).toLocaleDateString()}</td>
+                                <td className="p-4 text-right flex justify-end gap-2">
+                                  <button className="p-1.5 text-blue-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => openMessageModal(m)}>
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button className="p-1.5 text-red-400 hover:text-white bg-brand-card rounded border border-brand-border-white cursor-pointer" onClick={() => triggerMessageDelete(m.id)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <EmptyState title="Inbox Empty" message="No messages match your criteria." />
+                    )}
+                    {renderPagination(filtered.length)}
+                  </div>
+                );
+              })()}
               {activeTab === 'settings' && (
                 <Card hoverEffect={false} className="p-6 border border-brand-border-white bg-brand-card-dark/25">
                   <form onSubmit={handleSettingsSubmit} className="space-y-6">
@@ -1395,20 +1596,149 @@ export default function AdminDashboard() {
               {/* TAB 8: PROFILE SETTINGS */}
               {activeTab === 'profile' && (
                 <Card hoverEffect={false} className="p-6 border border-brand-border-white bg-brand-card-dark/25">
-                  <form onSubmit={handleAdminProfileSubmit} className="space-y-5">
-                    
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-white/90">Admin Full Name</label>
-                      <input type="text" value={aName} onChange={e => setAName(e.target.value)} className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none" required />
+                  <form onSubmit={handleAdminProfileSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Left Column: Avatar & Core Profile Info */}
+                      <div className="space-y-4 text-left">
+                        {/* Avatar Image Selection with Preview */}
+                        <div className="flex items-center gap-4 p-4 rounded-xl bg-brand-card-dark/40 border border-brand-border-white/5">
+                          <div className="relative group w-16 h-16 rounded-full overflow-hidden border border-brand-accent bg-brand-card">
+                            {avatarPreview ? (
+                              <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-brand-text-muted">
+                                <UserIcon className="w-6 h-6" />
+                              </div>
+                            )}
+                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[9px] font-semibold text-white cursor-pointer transition-opacity">
+                              <Camera className="w-4 h-4" />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarChange}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">Admin Photo</p>
+                            <p className="text-[9px] text-brand-text-muted mt-0.5">Click photo to upload new image (PNG, JPG, WebP, max 5MB)</p>
+                          </div>
+                        </div>
+
+                        {/* Name input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90">Full Name</label>
+                          <input
+                            type="text"
+                            placeholder="John Doe"
+                            value={aName}
+                            onChange={(e) => setAName(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                            required
+                          />
+                        </div>
+
+                        {/* Profession input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90">Profession / Title</label>
+                          <input
+                            type="text"
+                            placeholder="Lead Administrator"
+                            value={aProfession}
+                            onChange={(e) => setAProfession(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* Bio input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90">Bio / About Me</label>
+                          <textarea
+                            placeholder="Write a brief introduction about yourself..."
+                            value={aBio}
+                            onChange={(e) => setABio(e.target.value)}
+                            rows={3}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all resize-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Right Column: Web & Social Links */}
+                      <div className="space-y-4 text-left">
+                        {/* Direct URL option for Avatar */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90">Avatar Image URL (Alternative)</label>
+                          <input
+                            type="url"
+                            placeholder="https://images.unsplash.com/..."
+                            value={aAvatar}
+                            onChange={(e) => {
+                              setAAvatar(e.target.value);
+                              setAvatarPreview(e.target.value);
+                            }}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* Website input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-brand-text-muted" /> Website URL</label>
+                          <input
+                            type="url"
+                            placeholder="https://yourwebsite.com"
+                            value={aWebsite}
+                            onChange={(e) => setAWebsite(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* GitHub URL input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5"><Github className="w-3.5 h-3.5 text-brand-text-muted" /> GitHub Profile</label>
+                          <input
+                            type="url"
+                            placeholder="https://github.com/username"
+                            value={aGithub}
+                            onChange={(e) => setAGithub(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* LinkedIn URL input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5"><Linkedin className="w-3.5 h-3.5 text-brand-text-muted" /> LinkedIn Profile</label>
+                          <input
+                            type="url"
+                            placeholder="https://linkedin.com/in/username"
+                            value={aLinkedin}
+                            onChange={(e) => setALinkedin(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* Twitter/X URL input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5"><Twitter className="w-3.5 h-3.5 text-brand-text-muted" /> Twitter/X Profile</label>
+                          <input
+                            type="url"
+                            placeholder="https://twitter.com/username"
+                            value={aTwitter}
+                            onChange={(e) => setATwitter(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-white/90">Admin Avatar image URL</label>
-                      <input type="url" value={aAvatar} onChange={e => setAAvatar(e.target.value)} className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none" />
-                    </div>
-
-                    <div className="pt-2">
-                      <Button type="submit" variant="primary" className="font-bold py-2.5 text-xs" isLoading={isActionLoading} leftIcon={<Save className="w-4 h-4" />}>
+                    <div className="pt-2 border-t border-brand-border-white/5 flex justify-end">
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        className="font-bold py-2.5 text-xs px-6"
+                        isLoading={isActionLoading}
+                        leftIcon={<Save className="w-4 h-4" />}
+                      >
                         Update Profile
                       </Button>
                     </div>

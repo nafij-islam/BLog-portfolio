@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Calendar, Clock, ThumbsUp, MessageSquare, ArrowRight } from 'lucide-react';
 import { BlogPost } from '../data/types';
+import OptimizedImage from './OptimizedImage';
 import Card from './Card';
 
 interface BlogCardProps {
@@ -18,7 +19,7 @@ export const BlogCard = ({ blog }: BlogCardProps) => {
       {/* Category and Read time Meta overlay */}
       <div className="relative aspect-video w-full bg-brand-card-dark overflow-hidden">
         {/* Placeholder image generator or unsplash based on category */}
-        <img
+        <OptimizedImage
           src={
             blog.image || (
               category === 'Frontend' ? 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=80' :
@@ -29,7 +30,9 @@ export const BlogCard = ({ blog }: BlogCardProps) => {
             )
           }
           alt={title}
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 hover:scale-105"
         />
         <span className="absolute top-3 left-3 bg-brand-bg/90 border border-brand-accent/30 backdrop-blur px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-brand-accent uppercase tracking-wider">
           {category}

@@ -2,9 +2,9 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { ExternalLink, ArrowRight } from 'lucide-react';
 import { Project } from '../data/types';
+import OptimizedImage from './OptimizedImage';
 import Card from './Card';
 import Button from './Button';
 
@@ -19,12 +19,12 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
     <Card hoverEffect className="flex flex-col h-full overflow-hidden p-0! border border-brand-border-white">
       {/* Image Panel */}
       <div className="relative aspect-video w-full overflow-hidden bg-brand-card-dark">
-        <motion.img
-          whileHover={{ scale: 1.05 }}
-          transition={{ duration: 0.4 }}
+        <OptimizedImage
           src={image}
           alt={title}
-          className="w-full h-full object-cover"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 hover:scale-105"
         />
         
         {/* Category Pill */}

@@ -8,13 +8,15 @@ export async function GET() {
     await connectDB();
     let blogs = await Blog.find({ status: 'published', isFeatured: true })
       .populate('author', 'name avatarUrl role')
-      .limit(3);
+      .limit(3)
+      .lean();
 
     if (blogs.length === 0) {
       blogs = await Blog.find({ status: 'published' })
         .populate('author', 'name avatarUrl role')
         .sort({ likesCount: -1 })
-        .limit(3);
+        .limit(3)
+        .lean();
     }
 
     const formatted = blogs.map((b: any) => ({

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       { slug },
       { $inc: { viewsCount: 1 } },
       { new: true }
-    ).populate('author', 'name avatarUrl role');
+    ).populate('author', 'name avatarUrl role').lean();
 
     if (!blog) {
       return ApiResponse.notFound('Article not found');

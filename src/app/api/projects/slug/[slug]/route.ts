@@ -7,7 +7,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   try {
     await connectDB();
     const { slug } = await params;
-    const project = await Project.findOne({ slug });
+    const project = await Project.findOne({ slug }).lean();
     if (!project) {
       return ApiResponse.notFound('Project not found');
     }

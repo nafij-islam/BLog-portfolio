@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       return ApiResponse.forbidden('Access forbidden. Admins only.');
     }
 
-    const messages = await ContactMessage.find({}).sort({ createdAt: -1 });
+    const messages = await ContactMessage.find({}).sort({ createdAt: -1 }).lean();
 
     const formatted = messages.map(m => ({
       id: m._id.toString(),

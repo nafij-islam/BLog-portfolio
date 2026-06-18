@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       return ApiResponse.forbidden('Access forbidden. Admins only.');
     }
 
-    const users = await User.find({}).sort({ createdAt: -1 });
+    const users = await User.find({}).sort({ createdAt: -1 }).lean();
 
     const formatted = users.map(u => ({
       id: u._id.toString(),

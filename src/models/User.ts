@@ -39,4 +39,6 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+UserSchema.index({ email: 1 });
+
 export default models.User || model<IUser>('User', UserSchema);

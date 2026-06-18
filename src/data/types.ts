@@ -86,6 +86,14 @@ export interface User {
   createdAt: string;
   savedBlogs?: string[]; // blogIds
   likedBlogs?: string[]; // blogIds
+  bio?: string;
+  profession?: string;
+  website?: string;
+  socialLinks?: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
 }
 
 export interface Comment {

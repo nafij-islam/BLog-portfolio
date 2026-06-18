@@ -50,7 +50,8 @@ export async function GET(req: NextRequest) {
       .populate('author', 'name avatarUrl role')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     // Map model values for frontend compatibility
     const formatted = blogs.map((b: any) => ({

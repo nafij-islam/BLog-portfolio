@@ -15,6 +15,7 @@ import ProjectCard from '@/components/ProjectCard';
 import ExperienceCard from '@/components/ExperienceCard';
 import ServiceCard from '@/components/ServiceCard';
 import TestimonialCard from '@/components/TestimonialCard';
+import OptimizedImage from '@/components/OptimizedImage';
 
 export default function HomePage() {
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -144,10 +145,12 @@ export default function HomePage() {
             >
               {/* Inner glowing core */}
               <div className="absolute inset-0 bg-radial-gradient from-brand-accent/20 to-transparent pointer-events-none" />
-              <img
+              <OptimizedImage
                 src="/nafij-islam.jpg"
                 alt="Nafij Islam"
-                className="w-full h-full object-cover rounded-2xl relative z-10"
+                fill
+                sizes="(max-width: 768px) 100vw, 385px"
+                className="object-cover rounded-2xl relative z-10"
               />
             </motion.div>
 
@@ -306,7 +309,7 @@ export default function HomePage() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 {/* Image panel */}
                 <div className="lg:col-span-5 aspect-video w-full rounded-2xl overflow-hidden border border-brand-border-white shadow-md relative bg-brand-card-dark">
-                  <img
+                  <OptimizedImage
                     src={
                       featuredBlog.image || (
                         featuredBlog.category === 'Frontend' ? 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80' :
@@ -317,7 +320,9 @@ export default function HomePage() {
                       )
                     }
                     alt={featuredBlog.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <span className="absolute top-3 left-3 bg-brand-bg/95 border border-brand-accent/40 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold text-brand-accent uppercase tracking-wider">
                     {featuredBlog.category}

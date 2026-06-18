@@ -3,9 +3,10 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { ApiService } from '@/lib/api-service';
 import { BlogPost, Comment } from '@/data/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -26,6 +27,14 @@ function UserDashboardContent() {
   // Dynamic user details
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [profession, setProfession] = useState('');
+  const [bio, setBio] = useState('');
+  const [website, setWebsite] = useState('');
+  const [github, setGithub] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [twitter, setTwitter] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // User activity states
@@ -50,6 +59,13 @@ function UserDashboardContent() {
     if (user) {
       setName(user.name);
       setAvatar(user.avatar || '');
+      setProfession(user.profession || '');
+      setBio(user.bio || '');
+      setWebsite(user.website || '');
+      setGithub(user.socialLinks?.github || '');
+      setLinkedin(user.socialLinks?.linkedin || '');
+      setTwitter(user.socialLinks?.twitter || '');
+      setAvatarPreview(user.avatar || '');
 
       const fetchUserActivities = async () => {
         try {
@@ -79,6 +95,26 @@ function UserDashboardContent() {
     }
   }, [user]);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      showToast('Only PNG, JPG, JPEG, and WEBP formats are supported.', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size exceeds 5MB limit.', 'error');
+      return;
+    }
+
+    setAvatarFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setAvatarPreview(objectUrl);
+  };
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -91,10 +127,37 @@ function UserDashboardContent() {
     setIsSaving(true);
 
     try {
+      let finalAvatarUrl = avatar;
+
+      if (avatarFile) {
+        try {
+          const uploadResult = await ApiService.uploadImage(avatarFile, 'avatar');
+          finalAvatarUrl = uploadResult.url;
+          setAvatar(finalAvatarUrl);
+          setAvatarFile(null);
+        } catch (uploadErr: any) {
+          console.error('Avatar upload failed:', uploadErr);
+          showToast(uploadErr.message || 'Image upload failed. Settings not saved.', 'error');
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const res = await fetch('/api/auth/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, avatar }),
+        body: JSON.stringify({
+          name,
+          avatar: finalAvatarUrl,
+          bio,
+          profession,
+          website,
+          socialLinks: {
+            github,
+            linkedin,
+            twitter
+          }
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -327,39 +390,146 @@ function UserDashboardContent() {
               {/* Tab 4: Settings */}
               {activeTab === 'settings' && (
                 <Card hoverEffect={false} className="p-6 border border-brand-border-white bg-brand-card-dark/25">
-                  <form onSubmit={handleProfileUpdate} className="space-y-5">
-                    
-                    {/* Name input */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-white/90">Full Name</label>
-                      <input
-                        type="text"
-                        placeholder="John Doe"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
-                        required
-                      />
+                  <form onSubmit={handleProfileUpdate} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Left Column: Avatar & Core Profile Info */}
+                      <div className="space-y-4">
+                        {/* Avatar Image Selection with Preview */}
+                        <div className="flex items-center gap-4 p-4 rounded-xl bg-brand-card-dark/40 border border-brand-border-white/5">
+                          <div className="relative group w-16 h-16 rounded-full overflow-hidden border border-brand-accent bg-brand-card">
+                            {avatarPreview ? (
+                              <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-brand-text-muted">
+                                <UserIcon className="w-6 h-6" />
+                              </div>
+                            )}
+                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[9px] font-semibold text-white cursor-pointer transition-opacity">
+                              <Camera className="w-4 h-4" />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarChange}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">Profile Photo</p>
+                            <p className="text-[9px] text-brand-text-muted mt-0.5">Click photo to upload new image (PNG, JPG, WebP, max 5MB)</p>
+                          </div>
+                        </div>
+
+                        {/* Name input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90">Full Name</label>
+                          <input
+                            type="text"
+                            placeholder="John Doe"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                            required
+                          />
+                        </div>
+
+                        {/* Profession input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90">Profession / Title</label>
+                          <input
+                            type="text"
+                            placeholder="Frontend Developer"
+                            value={profession}
+                            onChange={(e) => setProfession(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* Bio input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90">Bio / About Me</label>
+                          <textarea
+                            placeholder="Write a brief introduction about yourself..."
+                            value={bio}
+                            onChange={(e) => setBio(e.target.value)}
+                            rows={3}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all resize-none animate-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Right Column: Web & Social Links */}
+                      <div className="space-y-4">
+                        {/* Direct URL option for Avatar */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90">Avatar Image URL (Alternative)</label>
+                          <input
+                            type="url"
+                            placeholder="https://images.unsplash.com/..."
+                            value={avatar}
+                            onChange={(e) => {
+                              setAvatar(e.target.value);
+                              setAvatarPreview(e.target.value);
+                            }}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* Website input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-brand-text-muted" /> Website URL</label>
+                          <input
+                            type="url"
+                            placeholder="https://yourwebsite.com"
+                            value={website}
+                            onChange={(e) => setWebsite(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* GitHub URL input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5"><Github className="w-3.5 h-3.5 text-brand-text-muted" /> GitHub Profile</label>
+                          <input
+                            type="url"
+                            placeholder="https://github.com/username"
+                            value={github}
+                            onChange={(e) => setGithub(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* LinkedIn URL input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5"><Linkedin className="w-3.5 h-3.5 text-brand-text-muted" /> LinkedIn Profile</label>
+                          <input
+                            type="url"
+                            placeholder="https://linkedin.com/in/username"
+                            value={linkedin}
+                            onChange={(e) => setLinkedin(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+
+                        {/* Twitter/X URL input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-white/90 flex items-center gap-1.5"><Twitter className="w-3.5 h-3.5 text-brand-text-muted" /> Twitter/X Profile</label>
+                          <input
+                            type="url"
+                            placeholder="https://twitter.com/username"
+                            value={twitter}
+                            onChange={(e) => setTwitter(e.target.value)}
+                            className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Avatar URL input */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-white/90">Avatar URL</label>
-                      <input
-                        type="url"
-                        placeholder="https://images.unsplash.com/..."
-                        value={avatar}
-                        onChange={(e) => setAvatar(e.target.value)}
-                        className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
-                      />
-                      <p className="text-[9px] text-brand-text-muted leading-none">Provide an image URL (e.g. Unsplash link) to change your visual profile picture.</p>
-                    </div>
-
-                    <div className="pt-2">
+                    <div className="pt-2 border-t border-brand-border-white/5 flex justify-end">
                       <Button
                         type="submit"
                         variant="primary"
-                        className="font-bold py-2.5 text-xs"
+                        className="font-bold py-2.5 text-xs px-6"
                         isLoading={isSaving}
                         leftIcon={<Save className="w-4 h-4" />}
                       >

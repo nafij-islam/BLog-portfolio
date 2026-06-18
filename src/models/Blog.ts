@@ -67,4 +67,9 @@ const BlogSchema = new Schema<IBlog>(
   { timestamps: true }
 );
 
+BlogSchema.index({ slug: 1 });
+BlogSchema.index({ status: 1 });
+BlogSchema.index({ isFeatured: 1 });
+BlogSchema.index({ category: 1 });
+
 export default models.Blog || model<IBlog>('Blog', BlogSchema);

@@ -10,14 +10,14 @@ export async function POST(req: NextRequest) {
   try {
     await connectDB();
     const body = await req.json().catch(() => ({}));
-    const { name, email, password } = body;
+    const { name, email, password, avatarUrl } = body;
 
     const validationError = Validators.validateRegistration(name, email, password);
     if (validationError) {
       return ApiResponse.error(validationError, 400);
     }
 
-    const exists = await User.findOne({ email: email.toLowerCase() });
+    const exists = await User.findOne({ email: email.toLowerCase() }).lean();
     if (exists) {
       return ApiResponse.error('An account with this email already exists', 400);
     }
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       name,
       email: email.toLowerCase(),
       passwordHash,
+      avatarUrl: avatarUrl || undefined,
       role: 'user',
       status: 'active',
     });

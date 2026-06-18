@@ -21,6 +21,9 @@ const CommentSchema = new Schema<IComment>(
   { timestamps: true }
 );
 
+CommentSchema.index({ blogId: 1 });
+CommentSchema.index({ status: 1 });
+
 // Keep blog.commentsCount in sync
 CommentSchema.post('save', async function (doc) {
   if (doc.status === 'approved') {
