@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   title: "Nafij. | Creative Developer & No-Code Architect Portfolio",
   description: "Explore the professional portfolio of Nafij, presenting high-performance Next.js frontends, custom Shopify sections, Bubble.io no-code software architectures, and UI/UX custom designs.",
   keywords: ["Next.js", "React", "TypeScript", "Tailwind CSS", "Shopify", "Bubble.io", "No-code Developer", "Portfolio"],
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
   openGraph: {
     title: "Nafij. | Creative Developer & No-Code Architect Portfolio",
     description: "Explore Next.js frontends, custom Shopify sections, Bubble.io web architectures, and UI/UX design translations.",
