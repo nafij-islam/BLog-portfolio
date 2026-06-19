@@ -6,11 +6,11 @@ import { motion } from 'framer-motion';
 export const FloatingSocial = () => {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
-      {/* Facebook Messenger Floating Button */}
+      {/* Facebook Floating Button */}
       <div className="relative group">
         {/* Pulsing Glow Aura */}
         <motion.div
-          className="absolute inset-0 rounded-full bg-[#0084FF] opacity-30 pointer-events-none"
+          className="absolute inset-0 rounded-full bg-[#1877F2] opacity-30 pointer-events-none"
           animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
           transition={{
             duration: 2.5,
@@ -24,7 +24,7 @@ export const FloatingSocial = () => {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Contact Nafij on Facebook"
-          className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-[#0084FF] text-white rounded-full shadow-[0_0_15px_rgba(0,132,255,0.5)] border border-white/10 hover:shadow-[0_0_25px_rgba(0,132,255,0.8)] transition-all duration-300"
+          className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-[#1877F2] text-white rounded-full shadow-[0_0_15px_rgba(24,119,242,0.5)] border border-white/10 hover:shadow-[0_0_25px_rgba(24,119,242,0.8)] transition-all duration-300"
           animate={{
             y: [0, -6, 0],
           }}
@@ -37,8 +37,8 @@ export const FloatingSocial = () => {
           whileHover={{ scale: 1.12, rotate: 6 }}
           whileTap={{ scale: 0.94 }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
-            <path d="M256.55 8C116.52 8 8 110.34 8 248.57c0 72.3 29.71 134.78 78.28 177.94 8.35 7.42 13.75 17.66 12.36 28.59l-5.61 44.1c-1.76 13.81 11.23 24.3 24.15 19.38l50.28-19.14c9.85-3.75 20.67-3.11 30.14 1.8 18.6 9.59 39.34 14.76 61 14.76 140.03 0 248.55-102.34 248.55-240.57C505.1 110.34 396.58 8 256.55 8zm76.52 168.21l-50.62 80.79c-11.58 18.5-36.59 23.1-53.87 9.94l-39.69-30.27c-9.47-7.21-22.75-7.21-32.22 0l-55.27 42.11c-11.83 9.02-27.18-5.32-19.53-17.54l50.62-80.79c11.58-18.5 36.59-23.1 53.87-9.94l39.69 30.27c9.47 7.21 22.75 7.21 32.22 0l55.27-42.11c11.83-9.02 27.18 5.32 19.53 17.54z"/>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
+            <path d="M80 299.3V256H12v-54.7h68v-43c0-67 41-103.4 100.5-103.4 28.5 0 53 2.1 60.1 3V130h-41c-32.5 0-38.9 15.4-38.9 38.2v50.1h77.7L228 256h-70.3v176.7H80z"/>
           </svg>
         </motion.a>
       </div>
