@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, passwordHash: string) => Promise<boolean>;
   register: (name: string, email: string, passwordHash: string, avatarUrl?: string) => Promise<boolean>;
+  loginWithGoogle: (idToken: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
   refreshUser: () => void;
@@ -26,6 +27,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const json = await res.json();
           if (json.success && json.data) {
             setUser(json.data);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('portfolio_logged_in_user', JSON.stringify(json.data));
+            }
+          } else {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('portfolio_logged_in_user');
+            }
           }
         }
       } catch (e) {
@@ -49,6 +57,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const json = await res.json();
       if (res.ok && json.success) {
         setUser(json.data);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('portfolio_logged_in_user', JSON.stringify(json.data));
+        }
         setIsLoading(false);
         return true;
       } else {
@@ -75,11 +86,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const json = await res.json();
       if (res.ok && json.success) {
         setUser(json.data);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('portfolio_logged_in_user', JSON.stringify(json.data));
+        }
         setIsLoading(false);
         return true;
       }
     } catch (e) {
       console.error('Registration request failed:', e);
+    }
+    setIsLoading(false);
+    return false;
+  };
+
+  const loginWithGoogle = async (idToken: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/firebase-google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setUser(json.data);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('portfolio_logged_in_user', JSON.stringify(json.data));
+        }
+        setIsLoading(false);
+        return true;
+      }
+    } catch (e) {
+      console.error('Google login request failed:', e);
     }
     setIsLoading(false);
     return false;
@@ -92,6 +131,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Logout request failed:', e);
     } finally {
       setUser(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('portfolio_logged_in_user');
+      }
     }
   };
 
@@ -103,6 +145,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const json = await res.json();
         if (json.success && json.data) {
           setUser(json.data);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('portfolio_logged_in_user', JSON.stringify(json.data));
+          }
         }
       }
     } catch (e) {
@@ -111,7 +156,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, logout, isLoading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

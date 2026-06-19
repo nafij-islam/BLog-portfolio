@@ -2,21 +2,24 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { ApiService } from '@/lib/api-service';
 import Button from './Button';
+import { auth, googleProvider, signInWithPopup } from '@/lib/firebase';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
 }
 
 export const AuthForm = ({ mode }: AuthFormProps) => {
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -74,6 +77,17 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
       return;
     }
 
+    if (!isLogin) {
+      if (!/[A-Z]/.test(password)) {
+        showToast('Password must contain at least one uppercase letter.', 'error');
+        return;
+      }
+      if (!/[a-z]/.test(password)) {
+        showToast('Password must contain at least one lowercase letter.', 'error');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -84,7 +98,9 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
           const stored = localStorage.getItem('portfolio_logged_in_user');
           if (stored) {
             const parsed = JSON.parse(stored);
-            if (parsed.role === 'admin') {
+            if (redirectUrl) {
+              router.push(redirectUrl);
+            } else if (parsed.role === 'admin') {
               router.push('/admin');
             } else {
               router.push('/dashboard');
@@ -110,7 +126,11 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
         const success = await register(name, email, password, uploadedAvatarUrl);
         if (success) {
           showToast('Registration successful! Welcome.', 'success');
-          router.push('/dashboard');
+          if (redirectUrl) {
+            router.push(redirectUrl);
+          } else {
+            router.push('/dashboard');
+          }
         } else {
           showToast('Email address already registered.', 'error');
         }
@@ -118,6 +138,41 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
     } catch (err) {
       console.error(err);
       showToast('An error occurred during authentication.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      
+      const success = await loginWithGoogle(idToken);
+      if (success) {
+        showToast('Successfully signed in with Google!', 'success');
+        const stored = localStorage.getItem('portfolio_logged_in_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (redirectUrl) {
+            router.push(redirectUrl);
+          } else if (parsed.role === 'admin') {
+            router.push('/admin');
+          } else {
+            router.push('/dashboard');
+          }
+        } else {
+          router.push('/');
+        }
+      } else {
+        showToast('Google login failed or account is blocked.', 'error');
+      }
+    } catch (err: any) {
+      console.error('Google Sign In popup error:', err);
+      if (err.code !== 'auth/popup-closed-by-user') {
+        showToast(err.message || 'Google Authentication failed', 'error');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -256,6 +311,42 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
         >
           {isLogin ? 'Sign In' : 'Sign Up'}
         </Button>
+
+        {/* Divider */}
+        <div className="relative my-5 flex items-center justify-center">
+          <div className="border-t border-brand-border/40 w-full"></div>
+          <span className="absolute bg-brand-card px-3 text-[10px] text-brand-text-muted font-medium uppercase tracking-wider">
+            Or continue with
+          </span>
+        </div>
+
+        {/* Google Sign In Button */}
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={isLoading}
+          className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-brand-card-dark hover:bg-brand-border/20 border border-brand-border-white rounded-xl text-white font-semibold text-sm transition-all duration-200 cursor-pointer disabled:opacity-50"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <path
+              fill="#EA4335"
+              d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.6 15.02 1 12 1 7.35 1 3.37 3.68 1.4 7.6l3.87 3C6.18 7.6 8.84 5.04 12 5.04z"
+            />
+            <path
+              fill="#4285F4"
+              d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.43c-.28 1.44-1.1 2.66-2.33 3.48l3.61 2.8c2.11-1.95 3.78-4.82 3.78-8.43z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.27 14.6c-.25-.76-.39-1.57-.39-2.4s.14-1.64.39-2.4L1.4 6.8c-.88 1.76-1.4 3.74-1.4 5.8s.52 4.04 1.4 5.8l3.87-3z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.61-2.8c-1.01.68-2.31 1.08-3.79 1.08-3.16 0-5.82-2.56-6.77-5.56L1.4 16.2C3.37 20.12 7.35 23 12 23z"
+            />
+          </svg>
+          Google
+        </button>
       </form>
 
       {/* Alternative redirection link */}

@@ -95,10 +95,10 @@ export const Navbar = () => {
 
         {/* CTA & Auth buttons */}
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/contact">
-            <Button variant="outline" size="sm">
+          <Link href="/contact" className="animate-rotate-border select-none">
+            <span className="px-5 py-2 text-xs font-bold text-white block">
               Hire Me
-            </Button>
+            </span>
           </Link>
 
           {user ? (
@@ -221,10 +221,10 @@ export const Navbar = () => {
                 );
               })}
               <div className="border-t border-brand-border-white pt-4 flex flex-col gap-3">
-                <Link href="/contact" className="w-full">
-                  <Button variant="outline" size="sm" className="w-full">
+                <Link href="/contact" className="animate-rotate-border w-full text-center select-none">
+                  <span className="w-full py-2 text-xs font-bold text-white block">
                     Hire Me
-                  </Button>
+                  </span>
                 </Link>
 
                 {user ? (

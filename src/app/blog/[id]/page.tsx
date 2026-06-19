@@ -244,38 +244,70 @@ export default function BlogDetailPage() {
           </div>
 
           {/* Main article content details */}
-          <article className="prose prose-invert max-w-none text-xs md:text-sm text-brand-text-muted leading-relaxed space-y-6 mb-12">
-            {blog.content.split('\n\n').map((para, idx) => {
-              if (para.startsWith('###')) {
-                return (
-                  <h3 key={idx} className="text-lg font-bold text-white pt-4 tracking-tight">
-                    {para.replace('###', '').trim()}
-                  </h3>
-                );
-              }
-              if (para.startsWith('```')) {
-                // simple render mock code blocks
-                const code = para.replace(/```[a-z]*/g, '').trim();
-                return (
-                  <pre key={idx} className="p-4 bg-brand-card-dark border border-brand-border-white rounded-xl overflow-x-auto font-mono text-xs text-white">
-                    <code>{code}</code>
-                  </pre>
-                );
-              }
-              if (para.startsWith('-')) {
-                // simple bullet renders
-                const items = para.split('\n');
-                return (
-                  <ul key={idx} className="list-disc list-inside pl-4 space-y-2">
-                    {items.map((item, itemIdx) => (
-                      <li key={itemIdx}>{item.replace('-', '').trim()}</li>
-                    ))}
-                  </ul>
-                );
-              }
-              return <p key={idx}>{para}</p>;
-            })}
-          </article>
+          {user ? (
+            <article className="prose prose-invert max-w-none text-xs md:text-sm text-brand-text-muted leading-relaxed space-y-6 mb-12">
+              {blog.content.split('\n\n').map((para, idx) => {
+                if (para.startsWith('###')) {
+                  return (
+                    <h3 key={idx} className="text-lg font-bold text-white pt-4 tracking-tight">
+                      {para.replace('###', '').trim()}
+                    </h3>
+                  );
+                }
+                if (para.startsWith('```')) {
+                  // simple render mock code blocks
+                  const code = para.replace(/```[a-z]*/g, '').trim();
+                  return (
+                    <pre key={idx} className="p-4 bg-brand-card-dark border border-brand-border-white rounded-xl overflow-x-auto font-mono text-xs text-white">
+                      <code>{code}</code>
+                    </pre>
+                  );
+                }
+                if (para.startsWith('-')) {
+                  // simple bullet renders
+                  const items = para.split('\n');
+                  return (
+                    <ul key={idx} className="list-disc list-inside pl-4 space-y-2">
+                      {items.map((item, itemIdx) => (
+                        <li key={itemIdx}>{item.replace('-', '').trim()}</li>
+                      ))}
+                    </ul>
+                  );
+                }
+                return <p key={idx}>{para}</p>;
+              })}
+            </article>
+          ) : (
+            <div className="bg-brand-card border border-brand-border rounded-2xl p-8 md:p-12 shadow-2xl text-center relative overflow-hidden my-8">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl pointer-events-none" />
+              
+              <div className="inline-flex p-4 bg-brand-accent/10 border border-brand-accent/20 rounded-2xl text-brand-accent mb-6">
+                <Lock className="w-8 h-8" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-white tracking-tight mb-4">
+                Unlock the Full Article
+              </h3>
+              <p className="text-xs md:text-sm text-brand-text-muted leading-relaxed max-w-md mx-auto mb-8">
+                This article contains professional code snippets, configuration files, and deep-dive technical insights. Unlock it by signing in or creating a free account.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link
+                  href={`/login?redirect=/blog/${id}`}
+                  className="w-full sm:w-auto px-8 py-3 bg-brand-accent hover:bg-brand-accent/90 text-white font-bold rounded-xl transition-all duration-200 shadow-lg text-xs text-center"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href={`/register?redirect=/blog/${id}`}
+                  className="w-full sm:w-auto px-8 py-3 bg-brand-card-dark hover:bg-brand-border/20 border border-brand-border-white text-white font-semibold rounded-xl transition-all duration-200 text-xs text-center"
+                >
+                  Create Account
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Like Interaction Actions */}
           <div className="flex items-center justify-between border-y border-brand-border-white py-4 mb-12">

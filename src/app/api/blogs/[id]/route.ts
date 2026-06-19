@@ -18,12 +18,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return ApiResponse.forbidden('Access denied');
     }
 
+    const isUserAuthenticated = !!payload;
+
     const formatted = {
       id: blog._id.toString(),
       title: blog.title,
       slug: blog.slug,
       excerpt: blog.excerpt,
-      content: blog.content,
+      content: isUserAuthenticated ? blog.content : '',
       category: blog.category,
       tags: blog.tags,
       author: blog.author ? {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Calendar, Send, Github, Linkedin, Twitter } from 'lucide-react';
 import { mockDb } from '@/data/mockDb';
@@ -11,6 +11,28 @@ import Button from '@/components/Button';
 import Card from '@/components/Card';
 import SectionHeading from '@/components/SectionHeading';
 
+const defaults = {
+  title: "Let's Build Something Amazing",
+  subtitle: "Fill out the contact form or reach out through social channels. I usually respond within 12 hours.",
+  introText: "Have a project in mind, need a developer, or want to discuss architectures? Drop me a message and I will reply as soon as possible.",
+  email: "contact@nafij.dev",
+  phone: "+880 1700 000000",
+  location: "Dhaka, Bangladesh",
+  availabilityText: "Open for Freelance & Contracts",
+  githubUrl: "https://github.com",
+  linkedinUrl: "https://linkedin.com",
+  twitterUrl: "https://twitter.com",
+  formNameLabel: "Your Name",
+  formNamePlaceholder: "John Doe",
+  formEmailLabel: "Email Address",
+  formEmailPlaceholder: "you@example.com",
+  formSubjectLabel: "Subject",
+  formSubjectPlaceholder: "Project Inquiry / Job Opportunity",
+  formMessageLabel: "Your Message",
+  formMessagePlaceholder: "Describe your project goals or detail your query here...",
+  successMessage: "Your message has been sent successfully!",
+};
+
 export default function ContactPage() {
   const { showToast } = useToast();
 
@@ -20,11 +42,35 @@ export default function ContactPage() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [settings, setSettings] = useState<any>(null);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/contact/settings');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            setSettings(json.data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch contact settings:', err);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const data = settings || defaults;
+
   const contactInfo = [
-    { id: 1, label: 'Email', value: 'contact@nafij.dev', icon: Mail, color: 'text-brand-accent' },
-    { id: 2, label: 'Phone', value: '+880 1700 000000', icon: Phone, color: 'text-blue-400' },
-    { id: 3, label: 'Location', value: 'Dhaka, Bangladesh', icon: MapPin, color: 'text-green-400' },
-    { id: 4, label: 'Availability', value: 'Open for Freelance & Contracts', icon: Calendar, color: 'text-amber-500' }
+    { id: 1, label: 'Email', value: data.email, icon: Mail, color: 'text-brand-accent' },
+    { id: 2, label: 'Phone', value: data.phone, icon: Phone, color: 'text-blue-400' },
+    { id: 3, label: 'Location', value: data.location, icon: MapPin, color: 'text-green-400' },
+    { id: 4, label: 'Availability', value: data.availabilityText, icon: Calendar, color: 'text-amber-500' }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,7 +98,7 @@ export default function ContactPage() {
 
       const json = await res.json();
       if (res.ok && json.success) {
-        showToast('Your message has been sent successfully!', 'success');
+        showToast(data.successMessage || 'Your message has been sent successfully!', 'success');
         setName('');
         setEmail('');
         setSubject('');
@@ -80,14 +126,20 @@ export default function ContactPage() {
         <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
           <SectionHeading
             badge="Get In Touch"
-            title="Let's Build Something Amazing"
-            subtitle="Fill out the contact form or reach out through social channels. I usually respond within 12 hours."
+            title={data.title}
+            subtitle={data.subtitle}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* Left Column: Contact details */}
             <div className="lg:col-span-5 space-y-4">
+              {data.introText && (
+                <Card hoverEffect={false} className="p-5 border border-brand-border-white bg-brand-card-dark/20 text-xs text-brand-text-muted leading-relaxed">
+                  {data.introText}
+                </Card>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
                 {contactInfo.map((info, idx) => {
                   const Icon = info.icon;
@@ -122,7 +174,7 @@ export default function ContactPage() {
                   <h4 className="text-xs font-bold text-white tracking-tight">Connect with me</h4>
                   <div className="flex items-center gap-3">
                     <a
-                      href="https://github.com"
+                      href={data.githubUrl || "https://github.com"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-3 bg-brand-card-light border border-brand-border-white hover:border-brand-accent text-brand-text-muted hover:text-brand-accent rounded-xl transition-all flex items-center gap-2 text-xs font-semibold"
@@ -130,7 +182,7 @@ export default function ContactPage() {
                       <Github className="w-4 h-4" /> GitHub
                     </a>
                     <a
-                      href="https://linkedin.com"
+                      href={data.linkedinUrl || "https://linkedin.com"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-3 bg-brand-card-light border border-brand-border-white hover:border-brand-accent text-brand-text-muted hover:text-brand-accent rounded-xl transition-all flex items-center gap-2 text-xs font-semibold"
@@ -138,7 +190,7 @@ export default function ContactPage() {
                       <Linkedin className="w-4 h-4" /> LinkedIn
                     </a>
                     <a
-                      href="https://twitter.com"
+                      href={data.twitterUrl || "https://twitter.com"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-3 bg-brand-card-light border border-brand-border-white hover:border-brand-accent text-brand-text-muted hover:text-brand-accent rounded-xl transition-all flex items-center gap-2 text-xs font-semibold"
@@ -162,10 +214,10 @@ export default function ContactPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     {/* Name input */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-white/90">Your Name</label>
+                      <label className="text-xs font-semibold text-white/90">{data.formNameLabel}</label>
                       <input
                         type="text"
-                        placeholder="John Doe"
+                        placeholder={data.formNamePlaceholder}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
@@ -174,10 +226,10 @@ export default function ContactPage() {
                     </div>
                     {/* Email input */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-white/90">Email Address</label>
+                      <label className="text-xs font-semibold text-white/90">{data.formEmailLabel}</label>
                       <input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder={data.formEmailPlaceholder}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
@@ -188,10 +240,10 @@ export default function ContactPage() {
 
                   {/* Subject input */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-white/90">Subject</label>
+                    <label className="text-xs font-semibold text-white/90">{data.formSubjectLabel}</label>
                     <input
                       type="text"
-                      placeholder="Project Inquiry / Job Opportunity"
+                      placeholder={data.formSubjectPlaceholder}
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
                       className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white placeholder-brand-text-muted focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all"
@@ -201,9 +253,9 @@ export default function ContactPage() {
 
                   {/* Message input */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-white/90">Your Message</label>
+                    <label className="text-xs font-semibold text-white/90">{data.formMessageLabel}</label>
                     <textarea
-                      placeholder="Describe your project goals or detail your query here..."
+                      placeholder={data.formMessagePlaceholder}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       rows={5}

@@ -46,20 +46,28 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit;
     const total = await Blog.countDocuments(filter);
-    const blogs = await Blog.find(filter)
+    
+    let blogsQuery = Blog.find(filter)
       .populate('author', 'name avatarUrl role')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit)
-      .lean();
+      .limit(limit);
 
+    const isUserAuthenticated = !!payload;
+    if (!isUserAuthenticated) {
+      // Select fields excluding content for unauthenticated users to optimize query size
+      blogsQuery = blogsQuery.select('-content');
+    }
+
+    const blogs = await blogsQuery.lean();
+ 
     // Map model values for frontend compatibility
     const formatted = blogs.map((b: any) => ({
       id: b._id.toString(),
       title: b.title,
       slug: b.slug,
       excerpt: b.excerpt,
-      content: b.content,
+      content: isUserAuthenticated ? (b.content || '') : '',
       category: b.category,
       tags: b.tags,
       author: b.author ? {

@@ -51,8 +51,9 @@ import Modal from '@/components/Modal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import EmptyState from '@/components/EmptyState';
 import LoadingState from '@/components/LoadingState';
+import TableSkeleton from '@/components/skeletons/TableSkeleton';
 
-type AdminTab = 'overview' | 'projects' | 'blogs' | 'comments' | 'users' | 'contacts' | 'settings' | 'profile';
+type AdminTab = 'overview' | 'projects' | 'blogs' | 'comments' | 'users' | 'contacts' | 'settings' | 'contactSettings' | 'profile';
 
 export default function AdminDashboard() {
   const { user, logout, isLoading, refreshUser } = useAuth();
@@ -231,6 +232,27 @@ export default function AdminDashboard() {
   const [sSeoMetaDesc, setSSeoMetaDesc] = useState('');
   const [sSeoKeywords, setSSeoKeywords] = useState('');
 
+  // Contact Settings Form States
+  const [cTitle, setCTitle] = useState('');
+  const [cSubtitle, setCSubtitle] = useState('');
+  const [cIntroText, setCIntroText] = useState('');
+  const [cEmail, setCEmail] = useState('');
+  const [cPhone, setCPhone] = useState('');
+  const [cLocation, setCLocation] = useState('');
+  const [cAvailabilityText, setCAvailabilityText] = useState('');
+  const [cGithubUrl, setCGithubUrl] = useState('');
+  const [cLinkedinUrl, setCLinkedinUrl] = useState('');
+  const [cTwitterUrl, setCTwitterUrl] = useState('');
+  const [cFormNameLabel, setCFormNameLabel] = useState('');
+  const [cFormNamePlaceholder, setCFormNamePlaceholder] = useState('');
+  const [cFormEmailLabel, setCFormEmailLabel] = useState('');
+  const [cFormEmailPlaceholder, setCFormEmailPlaceholder] = useState('');
+  const [cFormSubjectLabel, setCFormSubjectLabel] = useState('');
+  const [cFormSubjectPlaceholder, setCFormSubjectPlaceholder] = useState('');
+  const [cFormMessageLabel, setCFormMessageLabel] = useState('');
+  const [cFormMessagePlaceholder, setCFormMessagePlaceholder] = useState('');
+  const [cSuccessMessage, setCSuccessMessage] = useState('');
+
   // Admin Profile Edit States
   const [aName, setAName] = useState('');
   const [aAvatar, setAAvatar] = useState('');
@@ -373,6 +395,32 @@ export default function AdminDashboard() {
         setSSeoMetaTitle(dbSettings.seoMetaTitle || '');
         setSSeoMetaDesc(dbSettings.seoMetaDescription || '');
         setSSeoKeywords(dbSettings.seoKeywords || '');
+      }
+
+      // 7. Contact Settings
+      const contactSettingsRes = await fetch('/api/contact/settings');
+      const contactSettingsData = await contactSettingsRes.json();
+      if (contactSettingsData.success && contactSettingsData.data) {
+        const dbContactSettings = contactSettingsData.data;
+        setCTitle(dbContactSettings.title || '');
+        setCSubtitle(dbContactSettings.subtitle || '');
+        setCIntroText(dbContactSettings.introText || '');
+        setCEmail(dbContactSettings.email || '');
+        setCPhone(dbContactSettings.phone || '');
+        setCLocation(dbContactSettings.location || '');
+        setCAvailabilityText(dbContactSettings.availabilityText || '');
+        setCGithubUrl(dbContactSettings.githubUrl || '');
+        setCLinkedinUrl(dbContactSettings.linkedinUrl || '');
+        setCTwitterUrl(dbContactSettings.twitterUrl || '');
+        setCFormNameLabel(dbContactSettings.formNameLabel || '');
+        setCFormNamePlaceholder(dbContactSettings.formNamePlaceholder || '');
+        setCFormEmailLabel(dbContactSettings.formEmailLabel || '');
+        setCFormEmailPlaceholder(dbContactSettings.formEmailPlaceholder || '');
+        setCFormSubjectLabel(dbContactSettings.formSubjectLabel || '');
+        setCFormSubjectPlaceholder(dbContactSettings.formSubjectPlaceholder || '');
+        setCFormMessageLabel(dbContactSettings.formMessageLabel || '');
+        setCFormMessagePlaceholder(dbContactSettings.formMessagePlaceholder || '');
+        setCSuccessMessage(dbContactSettings.successMessage || '');
       }
 
       if (user) {
@@ -978,6 +1026,53 @@ export default function AdminDashboard() {
     }
   };
 
+  // Contact Settings Submission
+  const handleContactSettingsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsActionLoading(true);
+
+    try {
+      const res = await fetch('/api/admin/contact-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: cTitle,
+          subtitle: cSubtitle,
+          introText: cIntroText,
+          email: cEmail,
+          phone: cPhone,
+          location: cLocation,
+          availabilityText: cAvailabilityText,
+          githubUrl: cGithubUrl,
+          linkedinUrl: cLinkedinUrl,
+          twitterUrl: cTwitterUrl,
+          formNameLabel: cFormNameLabel,
+          formNamePlaceholder: cFormNamePlaceholder,
+          formEmailLabel: cFormEmailLabel,
+          formEmailPlaceholder: cFormEmailPlaceholder,
+          formSubjectLabel: cFormSubjectLabel,
+          formSubjectPlaceholder: cFormSubjectPlaceholder,
+          formMessageLabel: cFormMessageLabel,
+          formMessagePlaceholder: cFormMessagePlaceholder,
+          successMessage: cSuccessMessage
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showToast('Contact settings updated successfully.', 'success');
+        loadData();
+      } else {
+        showToast(data.message || 'Failed to update contact settings.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update contact settings.', 'error');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1082,6 +1177,7 @@ export default function AdminDashboard() {
     { id: 'users' as const, label: 'Manage Users', icon: Users },
     { id: 'contacts' as const, label: 'Contact Messages', icon: Mail },
     { id: 'settings' as const, label: 'Site Settings', icon: Settings },
+    { id: 'contactSettings' as const, label: 'Contact Settings', icon: Mail },
     { id: 'profile' as const, label: 'Profile Settings', icon: UserIcon }
   ];
 
@@ -1541,6 +1637,9 @@ export default function AdminDashboard() {
 
               {/* TAB 2: MANAGE PROJECTS */}
               {activeTab === 'projects' && (() => {
+                if (isOverviewLoading) {
+                  return <TableSkeleton rows={5} cols={4} />;
+                }
                 const filtered = projects.filter(p =>
                   !adminSearchQuery ||
                   p.title.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
@@ -1602,6 +1701,9 @@ export default function AdminDashboard() {
 
               {/* TAB 3: MANAGE BLOGS */}
               {activeTab === 'blogs' && (() => {
+                if (isOverviewLoading) {
+                  return <TableSkeleton rows={5} cols={4} />;
+                }
                 const filtered = blogs.filter(b =>
                   !adminSearchQuery ||
                   b.title.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
@@ -1674,6 +1776,9 @@ export default function AdminDashboard() {
 
               {/* TAB 4: MANAGE COMMENTS */}
               {activeTab === 'comments' && (() => {
+                if (isOverviewLoading) {
+                  return <TableSkeleton rows={5} cols={4} />;
+                }
                 const filtered = comments.filter(c =>
                   !adminSearchQuery ||
                   c.userName.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
@@ -1740,6 +1845,9 @@ export default function AdminDashboard() {
 
               {/* TAB 5: MANAGE USERS */}
               {activeTab === 'users' && (() => {
+                if (isOverviewLoading) {
+                  return <TableSkeleton rows={5} cols={4} />;
+                }
                 const filtered = users.filter(u =>
                   !adminSearchQuery ||
                   u.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
@@ -1811,6 +1919,9 @@ export default function AdminDashboard() {
 
               {/* TAB 6: CONTACT MESSAGES */}
               {activeTab === 'contacts' && (() => {
+                if (isOverviewLoading) {
+                  return <TableSkeleton rows={5} cols={4} />;
+                }
                 const filtered = messages.filter(m =>
                   !adminSearchQuery ||
                   m.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
@@ -1951,6 +2062,133 @@ export default function AdminDashboard() {
                     <div className="pt-2">
                       <Button type="submit" variant="primary" className="w-full font-bold py-3 text-xs" leftIcon={<Save className="w-4 h-4" />}>
                         Save All Changes
+                      </Button>
+                    </div>
+
+                  </form>
+                </Card>
+              )}
+
+              {/* TAB: CONTACT SETTINGS */}
+              {activeTab === 'contactSettings' && (
+                <Card hoverEffect={false} className="p-6 border border-brand-border-white bg-brand-card-dark/25 text-left">
+                  <form onSubmit={handleContactSettingsSubmit} className="space-y-6">
+                    
+                    {/* Header info */}
+                    <div className="border-b border-brand-border-white pb-4">
+                      <h3 className="text-xs font-bold text-brand-accent uppercase mb-4">1. Header Copy</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Section Title</label>
+                          <input type="text" value={cTitle} onChange={e => setCTitle(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Section Subtitle</label>
+                          <input type="text" value={cSubtitle} onChange={e => setCSubtitle(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                      </div>
+                      <div className="space-y-1 mt-4">
+                        <label className="text-[10px] font-semibold text-white/90">Introductory Text (Left Column)</label>
+                        <textarea value={cIntroText} onChange={e => setCIntroText(e.target.value)} rows={3} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none resize-none" />
+                      </div>
+                    </div>
+
+                    {/* Contact Details info */}
+                    <div className="border-b border-brand-border-white pb-4">
+                      <h3 className="text-xs font-bold text-brand-accent uppercase mb-4">2. Contact Details & Socials</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Email Address</label>
+                          <input type="email" value={cEmail} onChange={e => setCEmail(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Phone Number</label>
+                          <input type="text" value={cPhone} onChange={e => setCPhone(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Location</label>
+                          <input type="text" value={cLocation} onChange={e => setCLocation(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Availability Text</label>
+                          <input type="text" value={cAvailabilityText} onChange={e => setCAvailabilityText(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">GitHub URL</label>
+                          <input type="text" value={cGithubUrl} onChange={e => setCGithubUrl(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">LinkedIn URL</label>
+                          <input type="text" value={cLinkedinUrl} onChange={e => setCLinkedinUrl(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Twitter URL</label>
+                          <input type="text" value={cTwitterUrl} onChange={e => setCTwitterUrl(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Form config */}
+                    <div className="border-b border-brand-border-white pb-4">
+                      <h3 className="text-xs font-bold text-brand-accent uppercase mb-4">3. Contact Form Copy & Placeholders</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Name Label</label>
+                          <input type="text" value={cFormNameLabel} onChange={e => setCFormNameLabel(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Name Placeholder</label>
+                          <input type="text" value={cFormNamePlaceholder} onChange={e => setCFormNamePlaceholder(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Email Label</label>
+                          <input type="text" value={cFormEmailLabel} onChange={e => setCFormEmailLabel(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Email Placeholder</label>
+                          <input type="text" value={cFormEmailPlaceholder} onChange={e => setCFormEmailPlaceholder(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Subject Label</label>
+                          <input type="text" value={cFormSubjectLabel} onChange={e => setCFormSubjectLabel(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Subject Placeholder</label>
+                          <input type="text" value={cFormSubjectPlaceholder} onChange={e => setCFormSubjectPlaceholder(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Message Label</label>
+                          <input type="text" value={cFormMessageLabel} onChange={e => setCFormMessageLabel(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-white/90">Message Placeholder</label>
+                          <input type="text" value={cFormMessagePlaceholder} onChange={e => setCFormMessagePlaceholder(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Feedback copy config */}
+                    <div>
+                      <h3 className="text-xs font-bold text-brand-accent uppercase mb-4">4. Success Feedback</h3>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-white/90">Form Submission Success Message</label>
+                        <input type="text" value={cSuccessMessage} onChange={e => setCSuccessMessage(e.target.value)} className="w-full px-3 py-2 text-xs bg-brand-card-dark border border-brand-border-white rounded-lg text-white focus:outline-none" required />
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Button type="submit" variant="primary" className="w-full font-bold py-3 text-xs" isLoading={isActionLoading} leftIcon={<Save className="w-4 h-4" />}>
+                        Save Contact Settings
                       </Button>
                     </div>
 

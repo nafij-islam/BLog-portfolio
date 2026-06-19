@@ -14,6 +14,12 @@ export class Validators {
     if (!passwordHash || passwordHash.length < 6) {
       return 'Password must be at least 6 characters long';
     }
+    if (!/[A-Z]/.test(passwordHash)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!/[a-z]/.test(passwordHash)) {
+      return 'Password must contain at least one lowercase letter';
+    }
     return null;
   }
 

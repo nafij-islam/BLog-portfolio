@@ -68,3 +68,62 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #FF653F;
 }
+
+/* Premium Rotating Gradient Border Button */
+@keyframes rotate-border {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-rotate-border {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: transparent;
+  box-shadow: 0 0 12px rgba(255, 101, 63, 0.2);
+  transition: all 0.3s ease;
+}
+
+.animate-rotate-border::before {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 30%,
+    #FF653F 50%,
+    transparent 70%
+  );
+  animation: rotate-border 4s linear infinite;
+  z-index: 0;
+}
+
+.animate-rotate-border:hover::before {
+  animation-duration: 2s;
+}
+
+.animate-rotate-border:hover {
+  box-shadow: 0 0 20px rgba(255, 101, 63, 0.4);
+  transform: translateY(-1px);
+}
+
+.animate-rotate-border > * {
+  position: relative;
+  z-index: 1;
+  background-color: #111844;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+}
+
+.animate-rotate-border:hover > * {
+  background-color: #182054;
+}
