@@ -8,7 +8,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     await connectDB();
     const { id } = await params;
-    const blog = await Blog.findById(id).populate('author', 'name avatarUrl role').lean();
+    const blog = await Blog.findByIdAndUpdate(
+      id,
+      { $inc: { viewsCount: 1 } },
+      { new: true }
+    ).populate('author', 'name avatarUrl role').lean();
     if (!blog) {
       return ApiResponse.notFound('Article not found');
     }
@@ -38,6 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       readTime: blog.readTime,
       likes: blog.likesCount,
       commentsCount: blog.commentsCount,
+      views: blog.viewsCount || 0,
       image: blog.featuredImage?.url || '',
       status: blog.status === 'published' ? 'Published' : 'Draft',
       seoTitle: blog.seoTitle,

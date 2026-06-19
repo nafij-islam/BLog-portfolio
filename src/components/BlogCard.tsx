@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Calendar, Clock, ThumbsUp, MessageSquare, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, ThumbsUp, MessageSquare, ArrowRight, Eye } from 'lucide-react';
 import { BlogPost } from '../data/types';
 import OptimizedImage from './OptimizedImage';
 import Card from './Card';
@@ -12,7 +12,7 @@ interface BlogCardProps {
 }
 
 export const BlogCard = ({ blog }: BlogCardProps) => {
-  const { id, title, excerpt, date, category, readTime, likes, commentsCount, author } = blog;
+  const { id, title, excerpt, date, category, readTime, likes, commentsCount, views, author } = blog;
 
   return (
     <Card hoverEffect className="flex flex-col h-full overflow-hidden p-0! border border-brand-border-white">
@@ -78,13 +78,17 @@ export const BlogCard = ({ blog }: BlogCardProps) => {
           </div>
 
           <div className="flex items-center gap-3 text-[10px] text-brand-text-muted font-semibold">
-            <span className="flex items-center gap-1 hover:text-brand-accent transition-colors">
+            <span className="flex items-center gap-1 hover:text-brand-accent transition-colors" title="Likes">
               <ThumbsUp className="w-3.5 h-3.5" />
               {likes}
             </span>
-            <span className="flex items-center gap-1 hover:text-brand-accent transition-colors">
+            <span className="flex items-center gap-1 hover:text-brand-accent transition-colors" title="Comments">
               <MessageSquare className="w-3.5 h-3.5" />
               {commentsCount}
+            </span>
+            <span className="flex items-center gap-1 hover:text-brand-accent transition-colors" title="Views">
+              <Eye className="w-3.5 h-3.5" />
+              {views || 0}
             </span>
           </div>
         </div>

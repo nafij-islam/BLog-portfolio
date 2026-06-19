@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
       readTime: b.readTime,
       likes: b.likesCount,
       commentsCount: b.commentsCount,
+      views: b.viewsCount || 0,
       image: b.featuredImage?.url || '',
       status: b.status === 'published' ? 'Published' : 'Draft',
       seoTitle: b.seoTitle,

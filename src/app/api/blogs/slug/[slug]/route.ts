@@ -42,6 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       readTime: blog.readTime,
       likes: blog.likesCount,
       commentsCount: blog.commentsCount,
+      views: blog.viewsCount || 0,
       image: blog.featuredImage?.url || '',
       status: blog.status === 'published' ? 'Published' : 'Draft',
       seoTitle: blog.seoTitle,

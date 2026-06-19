@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, ThumbsUp, MessageSquare, ArrowLeft, Send, Lock } from 'lucide-react';
+import { Calendar, Clock, ThumbsUp, MessageSquare, ArrowLeft, Send, Lock, Eye } from 'lucide-react';
 import { BlogPost, Comment } from '@/data/types';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -327,10 +327,16 @@ export default function BlogDetailPage() {
               {isLiked ? 'Liked' : 'Like Post'} ({likesCount})
             </button>
 
-            <span className="text-xs text-brand-text-muted font-medium flex items-center gap-1.5">
-              <MessageSquare className="w-4 h-4 text-blue-400" />
-              {comments.length} Comments
-            </span>
+            <div className="flex items-center gap-5">
+              <span className="text-xs text-brand-text-muted font-medium flex items-center gap-1.5" title="Views">
+                <Eye className="w-4 h-4 text-brand-accent" />
+                {blog.views || 0} Views
+              </span>
+              <span className="text-xs text-brand-text-muted font-medium flex items-center gap-1.5" title="Comments">
+                <MessageSquare className="w-4 h-4 text-blue-400" />
+                {comments.length} Comments
+              </span>
+            </div>
           </div>
 
           {/* Comments Section */}

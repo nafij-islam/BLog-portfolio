@@ -17,6 +17,7 @@ export const defaultBlogs: BlogPost[] = [
     readTime: '6 min read',
     likes: 24,
     commentsCount: 2,
+    views: 120,
     seoTitle: 'Mastering Next.js App Router & Layouts - Nafij Portfolio',
     seoDescription: 'Learn to configure Next.js App Router for fast, responsive web design using server components and loading states.',
     seoKeywords: 'Next.js, App Router, React Server Components, Nested Layouts'
@@ -37,6 +38,7 @@ export const defaultBlogs: BlogPost[] = [
     readTime: '5 min read',
     likes: 18,
     commentsCount: 1,
+    views: 95,
     seoTitle: 'Page Speed Optimization & SEO Rankings Guide - Nafij',
     seoDescription: 'Understand Core Web Vitals and optimize page speeds to rank higher on search engines and improve layouts.',
     seoKeywords: 'Core Web Vitals, SEO Optimization, Page Speed, Web Performance'
@@ -57,6 +59,7 @@ export const defaultBlogs: BlogPost[] = [
     readTime: '8 min read',
     likes: 15,
     commentsCount: 0,
+    views: 84,
     seoTitle: 'Creating Custom Shopify Section Themes - Liquid Guide',
     seoDescription: 'Learn to write clean Liquid schema code and AJAX cart endpoints to customize Shopify commerce storefronts.',
     seoKeywords: 'Shopify Liquid, Custom Sections, AJAX Cart API, Theme Development'
@@ -77,6 +80,7 @@ export const defaultBlogs: BlogPost[] = [
     readTime: '7 min read',
     likes: 31,
     commentsCount: 0,
+    views: 156,
     seoTitle: 'Building SaaS Platforms with Bubble.io - No-Code Guide',
     seoDescription: 'Discover how to design database tables, configure workflows, and integrate APIs using Bubble.io no-code tools.',
     seoKeywords: 'Bubble.io, No-code SaaS, API Connector, Database Design'

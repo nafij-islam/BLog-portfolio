@@ -33,6 +33,7 @@ export interface BlogPost {
   readTime: string;
   likes: number;
   commentsCount: number;
+  views: number;
   image?: string;
   status?: 'Draft' | 'Published';
   seoTitle?: string;

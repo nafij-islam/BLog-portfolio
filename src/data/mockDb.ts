@@ -142,6 +142,7 @@ export const mockDb = {
       date: new Date().toISOString().split('T')[0],
       likes: 0,
       commentsCount: 0,
+      views: 0,
       status: blog.status || 'Published'
     };
     blogs.push(newBlog);
@@ -171,6 +172,7 @@ export const mockDb = {
         date: new Date().toISOString().split('T')[0],
         likes: 0,
         commentsCount: 0,
+        views: 0,
         status: b.status || 'Published'
       };
       blogs.push(newBlog);

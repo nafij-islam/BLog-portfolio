@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
 import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
+import FloatingSocial from "@/components/FloatingSocial";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({
           <ToastProvider>
             <AnalyticsTracker />
             {children}
+            <FloatingSocial />
           </ToastProvider>
         </AuthProvider>
       </body>
