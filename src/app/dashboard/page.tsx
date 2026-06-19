@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter } from 'lucide-react';
+import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter, Award } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { ApiService } from '@/lib/api-service';
@@ -22,7 +22,7 @@ function UserDashboardContent() {
   const searchParams = useSearchParams();
 
   // Active tab state
-  const [activeTab, setActiveTab] = useState<'overview' | 'liked' | 'comments' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'liked' | 'comments' | 'settings' | 'challenges'>('overview');
 
   // Dynamic user details
   const [name, setName] = useState('');
@@ -40,6 +40,7 @@ function UserDashboardContent() {
   // User activity states
   const [likedBlogs, setLikedBlogs] = useState<BlogPost[]>([]);
   const [userComments, setUserComments] = useState<Comment[]>([]);
+  const [userAttempts, setUserAttempts] = useState<any[]>([]);
 
   // Sync tab with query param if present
   useEffect(() => {
@@ -85,6 +86,13 @@ function UserDashboardContent() {
           const commentsData = await commentsRes.json();
           if (commentsData.success) {
             setUserComments(commentsData.data);
+          }
+
+          // Fetch attempts
+          const attemptsRes = await fetch('/api/challenges/my-attempts');
+          const attemptsData = await attemptsRes.json();
+          if (attemptsData.success) {
+            setUserAttempts(attemptsData.data || []);
           }
         } catch (error) {
           console.error('Failed to load user activity:', error);
@@ -192,6 +200,7 @@ function UserDashboardContent() {
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
     { id: 'liked' as const, label: 'Liked Articles', icon: Heart },
     { id: 'comments' as const, label: 'Comment History', icon: MessageSquare },
+    { id: 'challenges' as const, label: 'My Challenges', icon: Award },
     { id: 'settings' as const, label: 'Account Settings', icon: Settings }
   ];
 
@@ -265,6 +274,7 @@ function UserDashboardContent() {
                   {activeTab === 'overview' && 'Dashboard Overview'}
                   {activeTab === 'liked' && 'Liked Articles'}
                   {activeTab === 'comments' && 'Comments History'}
+                  {activeTab === 'challenges' && 'My Challenges'}
                   {activeTab === 'settings' && 'Profile Settings'}
                 </h1>
                 <span className="text-[10px] text-brand-text-muted font-medium flex items-center gap-1.5">
@@ -382,6 +392,79 @@ function UserDashboardContent() {
                       message="You haven't posted any comments yet. Share your feedback or ask questions on our technical blogs!"
                       actionText="Browse Blogs"
                       onAction={() => router.push('/blog')}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Tab: Challenges */}
+              {activeTab === 'challenges' && (
+                <div className="space-y-4 text-left">
+                  {userAttempts.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-4">
+                      {userAttempts.map((att) => (
+                        <Card hoverEffect={false} key={att.id} className="p-5 border border-brand-border bg-brand-card-dark">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-3 border-b border-brand-border-white/5 mb-3">
+                            <div>
+                              <span className="text-[9px] font-bold text-brand-accent uppercase tracking-wider block mb-1">
+                                {att.blogTitle}
+                              </span>
+                              <h4 className="text-sm font-bold text-white leading-none">
+                                {att.challengeTitle}
+                              </h4>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {att.resultPublished ? (
+                                <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 text-[9px] font-bold uppercase rounded">
+                                  Result Published
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-bold uppercase rounded">
+                                  Waiting for final result
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                            <div>
+                              <p className="text-[9px] text-brand-text-muted uppercase mb-0.5">Score</p>
+                              <p className="text-white font-extrabold">{att.score} Pts</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] text-brand-text-muted uppercase mb-0.5">Percentage</p>
+                              <p className="text-white font-extrabold">{Math.round(att.percentage)}%</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] text-brand-text-muted uppercase mb-0.5">Time Taken</p>
+                              <p className="text-white font-medium">
+                                {Math.floor(att.timeTakenSeconds / 60)}m {att.timeTakenSeconds % 60}s
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] text-brand-text-muted uppercase mb-0.5">Attempt Date</p>
+                              <p className="text-white font-medium">
+                                {new Date(att.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+
+                          {att.resultPublished && (
+                            <Link href={`/read-rank-challenge/${att.challengeId}`} className="block mt-4 w-fit">
+                              <Button variant="outline" size="sm">
+                                Review Question Answers
+                              </Button>
+                            </Link>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="No Challenges Completed"
+                      message="You haven't participated in any timed MCQ challenges yet. Check out the challenge board!"
+                      actionText="Browse Challenges"
+                      onAction={() => router.push('/read-rank-challenge')}
                     />
                   )}
                 </div>

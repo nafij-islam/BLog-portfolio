@@ -15,6 +15,7 @@ import Card from '@/components/Card';
 import LoadingState from '@/components/LoadingState';
 import BlogCard from '@/components/BlogCard';
 import OptimizedImage from '@/components/OptimizedImage';
+import BlogChallengeCTA from '@/components/blog/BlogChallengeCTA';
 
 export default function BlogDetailPage() {
   const params = useParams();
@@ -308,6 +309,9 @@ export default function BlogDetailPage() {
               </div>
             </div>
           )}
+
+          {/* Blog Timed Challenge Option */}
+          <BlogChallengeCTA blogSlug={blog.slug} />
 
           {/* Like Interaction Actions */}
           <div className="flex items-center justify-between border-y border-brand-border-white py-4 mb-12">

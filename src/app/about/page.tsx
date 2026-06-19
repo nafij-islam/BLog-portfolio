@@ -14,9 +14,10 @@ import OptimizedImage from '@/components/OptimizedImage';
 
 export default function AboutPage() {
   const [siteSettings, setSiteSettings] = useState<any>(null);
+  const [pageMedia, setPageMedia] = useState<any>(null);
 
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetchData = async () => {
       try {
         const res = await fetch('/api/admin/settings');
         if (res.ok) {
@@ -25,11 +26,19 @@ export default function AboutPage() {
             setSiteSettings(json.data);
           }
         }
+
+        const mediaRes = await fetch('/api/site-media');
+        if (mediaRes.ok) {
+          const mediaJson = await mediaRes.json();
+          if (mediaJson.success) {
+            setPageMedia(mediaJson.data);
+          }
+        }
       } catch (err) {
-        console.error('Failed to fetch settings:', err);
+        console.error('Failed to fetch about data:', err);
       }
     };
-    fetchSettings();
+    fetchData();
   }, []);
 
   const aboutTitle = siteSettings?.aboutTitle || "Building Modern Web Experiences";
@@ -109,7 +118,7 @@ export default function AboutPage() {
                 
                 {/* Visual Avatar Placeholder */}
                 <OptimizedImage
-                  src="https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=500&q=80"
+                  src={pageMedia?.aboutHeroImageUrl || "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=500&q=80"}
                   alt="Nafij Creative Office"
                   fill
                   sizes="(max-width: 768px) 100vw, 385px"
@@ -226,7 +235,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
           <div className="relative rounded-3xl overflow-hidden border border-brand-border-white p-8 md:p-12 lg:p-16 bg-brand-card">
             {/* Visual background image glow */}
-            <div className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" style={{ backgroundImage: "url('/bannerimg-DAerhh9n.jpeg')" }} />
+            <div className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" style={{ backgroundImage: `url('${pageMedia?.aboutBottomBannerImageUrl || "/bannerimg-DAerhh9n.jpeg"}')` }} />
             <div className="absolute inset-0 bg-radial-gradient from-transparent via-brand-card to-brand-card-dark pointer-events-none" />
 
             <div className="relative z-10 max-w-2xl flex flex-col items-start text-left">

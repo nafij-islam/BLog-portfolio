@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       role: user.role,
       status: user.status,
       avatar: user.avatarUrl,
+      emailVerified: !!user.emailVerified,
       createdAt: user.createdAt.toISOString(),
       savedBlogs: [],
       likedBlogs: [],

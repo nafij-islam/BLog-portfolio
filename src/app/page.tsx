@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Compass, Star, Code, ShoppingBag, Layers, Zap, Calendar, Clock, ThumbsUp, MessageSquare } from 'lucide-react';
+import { ArrowRight, Mail, Compass, Star, Code, ShoppingBag, Layers, Zap, Calendar, Clock, ThumbsUp, MessageSquare, Award, HelpCircle } from 'lucide-react';
 import { mockDb } from '@/data/mockDb';
 import { Project, Skill, Service, Experience, Testimonial, BlogPost } from '@/data/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Button from '@/components/Button';
+import Card from '@/components/Card';
 import SectionHeading from '@/components/SectionHeading';
 import SkillCard from '@/components/SkillCard';
 import ProjectCard from '@/components/ProjectCard';
@@ -25,6 +26,13 @@ export default function HomePage() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [featuredBlog, setFeaturedBlog] = useState<BlogPost | null>(null);
+
+  // New features home page states
+  const [pageMedia, setPageMedia] = useState<any>(null);
+  const [winners, setWinners] = useState<any[]>([]);
+  const [challengeTitle, setChallengeTitle] = useState('');
+  const [featuredQAs, setFeaturedQAs] = useState<any[]>([]);
+  const [featuredReviews, setFeaturedReviews] = useState<any[]>([]);
 
   useEffect(() => {
     // Fetch static mock lists
@@ -57,6 +65,43 @@ export default function HomePage() {
           const blogJson = await blogRes.json();
           if (blogJson.success && blogJson.data && blogJson.data.length > 0) {
             setFeaturedBlog(blogJson.data[0]);
+          }
+        }
+
+        // Fetch Page Media
+        const mediaRes = await fetch('/api/site-media');
+        if (mediaRes.ok) {
+          const mediaJson = await mediaRes.json();
+          if (mediaJson.success) {
+            setPageMedia(mediaJson.data);
+          }
+        }
+
+        // Fetch Challenge Winners
+        const winnersRes = await fetch('/api/home/challenge-winners');
+        if (winnersRes.ok) {
+          const winnersJson = await winnersRes.json();
+          if (winnersJson.success) {
+            setWinners(winnersJson.data.winners || []);
+            setChallengeTitle(winnersJson.data.challengeTitle || '');
+          }
+        }
+
+        // Fetch Featured Q&As
+        const qasRes = await fetch('/api/ask-nafij?featured=true');
+        if (qasRes.ok) {
+          const qasJson = await qasRes.json();
+          if (qasJson.success) {
+            setFeaturedQAs(qasJson.data.qas?.slice(0, 3) || []);
+          }
+        }
+
+        // Fetch Featured Reviews
+        const reviewsRes = await fetch('/api/site-review?featured=true');
+        if (reviewsRes.ok) {
+          const reviewsJson = await reviewsRes.json();
+          if (reviewsJson.success) {
+            setFeaturedReviews(reviewsJson.data?.slice(0, 3) || []);
           }
         }
       } catch (err) {
@@ -146,9 +191,10 @@ export default function HomePage() {
               {/* Inner glowing core */}
               <div className="absolute inset-0 bg-radial-gradient from-brand-accent/20 to-transparent pointer-events-none" />
               <OptimizedImage
-                src="/nafij-islam.jpg"
+                src={pageMedia?.homeHeroImageUrl || "/nafij-islam.jpg"}
                 alt="Nafij Islam"
                 fill
+                priority
                 sizes="(max-width: 768px) 100vw, 385px"
                 className="object-cover rounded-2xl relative z-10"
               />
@@ -283,6 +329,30 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PROJECT ESTIMATOR CTA SECTION */}
+      <section className="py-20 bg-brand-card-dark/45 border-y border-brand-border-white relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-accent/5 rounded-full blur-[120px] pointer-events-none" />
+        
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+          <div className="p-8 md:p-12 rounded-3xl bg-gradient-to-tr from-brand-card to-brand-card-light border-2 border-brand-accent/20 shadow-2xl flex flex-col items-center">
+            <span className="px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-accent bg-brand-accent/10 border border-brand-accent/20 rounded-full mb-4">
+              Dynamic Estimator
+            </span>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+              Estimate Your Project
+            </h2>
+            <p className="text-xs md:text-sm text-brand-text-muted mt-3 mb-8 max-w-xl leading-relaxed">
+              Answer a few quick questions and get an instant project packaging and complexity brief before contacting Nafij.
+            </p>
+            <Link href="/estimate-project">
+              <Button variant="primary" size="lg" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                Start Project Estimator
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* FEATURED BLOG SECTION */}
       {featuredBlog && (
         <section className="py-20 bg-brand-bg relative overflow-hidden">
@@ -388,6 +458,52 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* LATEST CHALLENGE WINNERS SECTION */}
+      {winners.length > 0 && (
+        <section className="py-20 bg-brand-card-dark/45 border-y border-brand-border-white relative">
+          <div className="max-w-7xl mx-auto px-6 md:px-8 text-center relative z-10">
+            <SectionHeading
+              badge="Leaderboard"
+              title="Latest Challenge Winners"
+              subtitle={`Top scoring players who completed the timed challenge for "${challengeTitle}".`}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-8">
+              {winners.map((winner) => (
+                <Card hoverEffect key={winner.id} className="p-5 border border-brand-accent/15 flex flex-col items-center text-center bg-brand-card relative">
+                  <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-brand-accent/10 flex items-center justify-center font-black text-xs text-brand-accent">
+                    #{winner.rank}
+                  </div>
+                  <img
+                    src={winner.user.avatar}
+                    alt={winner.user.name}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-brand-accent/20 mb-3"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop';
+                    }}
+                  />
+                  <h4 className="text-sm font-bold text-white leading-none">{winner.user.name}</h4>
+                  <p className="text-[10px] text-brand-text-muted mt-2 uppercase font-extrabold tracking-wider">
+                    Score: <span className="text-white">{winner.score} Pts</span>
+                  </p>
+                  <p className="text-[9px] text-brand-text-muted mt-1">
+                    Time Taken: <span className="text-white">{Math.floor(winner.timeTakenSeconds / 60)}m {winner.timeTakenSeconds % 60}s</span>
+                  </p>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="mt-8 text-center">
+              <Link href="/read-rank-challenge">
+                <Button variant="outline" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+                  Join Challenges
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 5. EXPERIENCE SECTION */}
       <section className="py-20 relative">
         <div className="max-w-7xl mx-auto px-6 md:px-8">
@@ -413,6 +529,40 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* FEATURED ASK NAFIJ SECTION */}
+      {featuredQAs.length > 0 && (
+        <section className="py-20 bg-brand-bg relative overflow-hidden border-b border-brand-border-white">
+          <div className="max-w-7xl mx-auto px-6 md:px-8 text-center relative z-10">
+            <SectionHeading
+              badge="Q&A Forum"
+              title="Featured Ask Nafij Answers"
+              subtitle="Select technical answers to client and community queries regarding layout structures and logic configurations."
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 text-left">
+              {featuredQAs.map((qa) => (
+                <Card hoverEffect key={qa.id} className="p-5 border border-brand-accent/15 flex flex-col justify-between bg-brand-card">
+                  <div>
+                    <span className="px-2 py-0.5 bg-brand-card-dark text-brand-accent border border-brand-accent/20 rounded text-[8px] font-bold uppercase tracking-wider block w-fit mb-3">
+                      {qa.category}
+                    </span>
+                    <h4 className="text-xs md:text-sm font-extrabold text-white leading-relaxed mb-3">
+                      Q: {qa.question}
+                    </h4>
+                    <p className="text-xs text-brand-text-muted leading-relaxed line-clamp-4">
+                      A: {qa.answer}
+                    </p>
+                  </div>
+                  <Link href="/ask-nafij" className="text-[10px] text-brand-accent hover:underline font-bold mt-4 block">
+                    Read Full Answer & Ask Questions &rarr;
+                  </Link>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 6. TESTIMONIALS SECTION */}
       <section className="py-20 bg-brand-card-dark/45 border-y border-brand-border-white relative">
         <div className="max-w-7xl mx-auto px-6 md:px-8">
@@ -437,6 +587,47 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* FEATURED VISITOR REVIEWS SECTION */}
+      {featuredReviews.length > 0 && (
+        <section className="py-20 bg-brand-card-dark/45 border-y border-brand-border-white relative">
+          <div className="max-w-7xl mx-auto px-6 md:px-8 text-center relative z-10">
+            <SectionHeading
+              badge="Visitor Feedback"
+              title="Featured Experience Reviews"
+              subtitle="Constructive evaluations and design scorecards left by recent portfolio visitors."
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 text-left">
+              {featuredReviews.map((rev) => (
+                <Card hoverEffect key={rev.id} className="p-5 border border-brand-accent/15 flex flex-col justify-between bg-brand-card">
+                  <div>
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-brand-border-white/5 mb-3">
+                      <span className="text-xs font-bold text-white">{rev.name}</span>
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3 h-3 ${
+                              i < rev.overallRating ? 'text-amber-400 fill-amber-400' : 'text-brand-text-muted/20'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-brand-text-muted leading-relaxed italic mb-4 line-clamp-3">
+                      "{rev.reviewText}"
+                    </p>
+                  </div>
+                  <Link href="/site-review" className="text-[10px] text-brand-accent hover:underline font-bold mt-2 block">
+                    View More Reviews & Leave Feedback &rarr;
+                  </Link>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 7. FINAL CTA SECTION */}
       <section className="py-24 relative overflow-hidden text-center">

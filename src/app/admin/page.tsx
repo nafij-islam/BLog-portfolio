@@ -53,7 +53,28 @@ import EmptyState from '@/components/EmptyState';
 import LoadingState from '@/components/LoadingState';
 import TableSkeleton from '@/components/skeletons/TableSkeleton';
 
-type AdminTab = 'overview' | 'projects' | 'blogs' | 'comments' | 'users' | 'contacts' | 'settings' | 'contactSettings' | 'profile';
+// Sub-tabs imports
+import ProjectBriefsTab from '@/components/admin/ProjectBriefsTab';
+import ReadRankTab from '@/components/admin/ReadRankTab';
+import AskNafijTab from '@/components/admin/AskNafijTab';
+import SiteReviewsTab from '@/components/admin/SiteReviewsTab';
+import PageMediaTab from '@/components/admin/PageMediaTab';
+
+type AdminTab =
+  | 'overview'
+  | 'projects'
+  | 'blogs'
+  | 'comments'
+  | 'users'
+  | 'contacts'
+  | 'settings'
+  | 'contactSettings'
+  | 'profile'
+  | 'project-briefs'
+  | 'read-rank'
+  | 'ask-nafij'
+  | 'site-reviews'
+  | 'page-media';
 
 export default function AdminDashboard() {
   const { user, logout, isLoading, refreshUser } = useAuth();
@@ -1178,7 +1199,12 @@ export default function AdminDashboard() {
     { id: 'contacts' as const, label: 'Contact Messages', icon: Mail },
     { id: 'settings' as const, label: 'Site Settings', icon: Settings },
     { id: 'contactSettings' as const, label: 'Contact Settings', icon: Mail },
-    { id: 'profile' as const, label: 'Profile Settings', icon: UserIcon }
+    { id: 'profile' as const, label: 'Profile Settings', icon: UserIcon },
+    { id: 'project-briefs' as const, label: 'Project Briefs', icon: FileText },
+    { id: 'read-rank' as const, label: 'Read & Rank', icon: Tv },
+    { id: 'ask-nafij' as const, label: 'Ask Nafij', icon: MessageSquare },
+    { id: 'site-reviews' as const, label: 'Site Reviews', icon: ThumbsUp },
+    { id: 'page-media' as const, label: 'Page Media', icon: ImageIcon }
   ];
 
   return (
@@ -2355,6 +2381,31 @@ export default function AdminDashboard() {
 
                   </form>
                 </Card>
+              )}
+
+              {/* TAB 9: PROJECT BRIEF ESTIMATOR */}
+              {activeTab === 'project-briefs' && (
+                <ProjectBriefsTab />
+              )}
+
+              {/* TAB 10: READ & RANK MCQ CHALLENGE */}
+              {activeTab === 'read-rank' && (
+                <ReadRankTab />
+              )}
+
+              {/* TAB 11: ASK NAFIJ QUESTIONS & MODERATION */}
+              {activeTab === 'ask-nafij' && (
+                <AskNafijTab />
+              )}
+
+              {/* TAB 12: SITE VISITOR REVIEWS & RATINGS */}
+              {activeTab === 'site-reviews' && (
+                <SiteReviewsTab />
+              )}
+
+              {/* TAB 13: LANDING PAGE CUSTOM MEDIA */}
+              {activeTab === 'page-media' && (
+                <PageMediaTab />
               )}
 
             </div>

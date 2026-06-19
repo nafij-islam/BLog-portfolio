@@ -83,6 +83,7 @@ export interface User {
   role: 'user' | 'admin';
   status: 'active' | 'suspended';
   avatar: string;
+  emailVerified?: boolean;
   createdAt: string;
   savedBlogs?: string[]; // blogIds
   likedBlogs?: string[]; // blogIds
