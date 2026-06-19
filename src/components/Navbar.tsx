@@ -230,8 +230,7 @@ export const Navbar = () => {
                 {user ? (
                   <>
                     <Link href={dashboardPath} className="w-full">
-                      <Button variant="secondary" size="sm" className="w-full flex items-center justify-center gap-2">
-                        <LayoutDashboard className="w-4 h-4 text-brand-accent" />
+                      <Button variant="secondary" size="sm" className="w-full" leftIcon={<LayoutDashboard className="w-4 h-4 text-brand-accent" />}>
                         Dashboard
                       </Button>
                     </Link>
@@ -239,9 +238,9 @@ export const Navbar = () => {
                       variant="danger"
                       size="sm"
                       onClick={handleLogout}
-                      className="w-full flex items-center justify-center gap-2"
+                      className="w-full"
+                      leftIcon={<LogOut className="w-4 h-4" />}
                     >
-                      <LogOut className="w-4 h-4" />
                       Logout
                     </Button>
                   </>
