@@ -3,10 +3,17 @@ import User from '../models/User';
 import Project from '../models/Project';
 import Blog from '../models/Blog';
 import SiteSettings from '../models/SiteSettings';
+import Service from '../models/Service';
+import Skill from '../models/Skill';
+import Experience from '../models/Experience';
+import Education from '../models/Education';
 import { AuthHelper } from './auth';
 
 import { defaultProjects } from '../data/projects';
 import { defaultBlogs } from '../data/blogs';
+import { defaultSkills } from '../data/skills';
+import { defaultServices } from '../data/services';
+import { defaultExperience } from '../data/experience';
 
 export async function seedDatabase() {
   await connectDB();
@@ -123,6 +130,77 @@ export async function seedDatabase() {
         seoDescription: blog.seoDescription || blog.excerpt,
         seoKeywords: blog.seoKeywords || blog.category,
         publishedAt: new Date(blog.date),
+      });
+    }
+  }
+
+  // 5. Seed Services
+  const servicesCount = await Service.countDocuments();
+  if (servicesCount === 0) {
+    console.log('Seeding Services...');
+    for (const s of defaultServices) {
+      await Service.create({
+        title: s.title,
+        iconName: s.iconName,
+        description: s.description,
+        bullets: s.bullets,
+      });
+    }
+  }
+
+  // 6. Seed Skills
+  const skillsCount = await Skill.countDocuments();
+  if (skillsCount === 0) {
+    console.log('Seeding Skills...');
+    for (const s of defaultSkills) {
+      await Skill.create({
+        name: s.name,
+        category: s.category,
+        level: s.level,
+        iconName: s.iconName,
+      });
+    }
+  }
+
+  // 7. Seed Experiences
+  const experiencesCount = await Experience.countDocuments();
+  if (experiencesCount === 0) {
+    console.log('Seeding Experiences...');
+    for (const e of defaultExperience) {
+      await Experience.create({
+        role: e.role,
+        company: e.company,
+        duration: e.duration,
+        description: e.description,
+        tags: e.tags,
+      });
+    }
+  }
+
+  // 8. Seed Education
+  const educationCount = await Education.countDocuments();
+  if (educationCount === 0) {
+    console.log('Seeding Education...');
+    const defaultEducation = [
+      {
+        degree: 'B.Sc. in Computer Science',
+        institution: 'Global University of Technology',
+        duration: '2017 - 2021',
+        description: 'Specialized in Software Engineering, Database Systems, Web Architectures, and completed key projects on compiler design.'
+      },
+      {
+        degree: 'Professional Web Design & Optimization Certified',
+        institution: 'W3C Academy',
+        duration: '2022',
+        description: 'Rigorous coursework on advanced CSS, layout responsiveness, network bundle optimization, and Core Web Vitals algorithms.'
+      }
+    ];
+    for (const edu of defaultEducation) {
+      await Education.create({
+        degree: edu.degree,
+        institution: edu.institution,
+        duration: edu.duration,
+        description: edu.description,
       });
     }
   }

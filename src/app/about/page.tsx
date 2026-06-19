@@ -15,6 +15,7 @@ import OptimizedImage from '@/components/OptimizedImage';
 export default function AboutPage() {
   const [siteSettings, setSiteSettings] = useState<any>(null);
   const [pageMedia, setPageMedia] = useState<any>(null);
+  const [education, setEducation] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +35,31 @@ export default function AboutPage() {
             setPageMedia(mediaJson.data);
           }
         }
+
+        const eduRes = await fetch('/api/education');
+        if (eduRes.ok) {
+          const eduJson = await eduRes.json();
+          if (eduJson.success && eduJson.data && eduJson.data.length > 0) {
+            setEducation(eduJson.data);
+          } else {
+            setEducation([
+              {
+                id: 'ed1',
+                degree: 'B.Sc. in Computer Science',
+                institution: 'Global University of Technology',
+                duration: '2017 - 2021',
+                description: 'Specialized in Software Engineering, Database Systems, Web Architectures, and completed key projects on compiler design.'
+              },
+              {
+                id: 'ed2',
+                degree: 'Professional Web Design & Optimization Certified',
+                institution: 'W3C Academy',
+                duration: '2022',
+                description: 'Rigorous coursework on advanced CSS, layout responsiveness, network bundle optimization, and Core Web Vitals algorithms.'
+              }
+            ]);
+          }
+        }
       } catch (err) {
         console.error('Failed to fetch about data:', err);
       }
@@ -50,23 +76,6 @@ export default function AboutPage() {
     { id: 2, label: 'Happy Clients', value: '40+', icon: Users, color: 'text-blue-400' },
     { id: 3, label: 'Cups of Coffee', value: '1000+', icon: Coffee, color: 'text-amber-500' },
     { id: 4, label: 'Dedication', value: '100%', icon: Flame, color: 'text-red-500' }
-  ];
-
-  const education = [
-    {
-      id: 'ed1',
-      degree: 'B.Sc. in Computer Science',
-      institution: 'Global University of Technology',
-      duration: '2017 - 2021',
-      description: 'Specialized in Software Engineering, Database Systems, Web Architectures, and completed key projects on compiler design.'
-    },
-    {
-      id: 'ed2',
-      degree: 'Professional Web Design & Optimization Certified',
-      institution: 'W3C Academy',
-      duration: '2022',
-      description: 'Rigorous coursework on advanced CSS, layout responsiveness, network bundle optimization, and Core Web Vitals algorithms.'
-    }
   ];
 
   return (

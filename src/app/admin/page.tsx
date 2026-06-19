@@ -37,7 +37,9 @@ import {
   UserCheck,
   FileText,
   Image as ImageIcon,
-  Tv
+  Tv,
+  Award,
+  Cpu
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -59,6 +61,10 @@ import ReadRankTab from '@/components/admin/ReadRankTab';
 import AskNafijTab from '@/components/admin/AskNafijTab';
 import SiteReviewsTab from '@/components/admin/SiteReviewsTab';
 import PageMediaTab from '@/components/admin/PageMediaTab';
+import ServicesTab from '@/components/admin/ServicesTab';
+import SkillsTab from '@/components/admin/SkillsTab';
+import ExperiencesTab from '@/components/admin/ExperiencesTab';
+import EducationTab from '@/components/admin/EducationTab';
 
 type AdminTab =
   | 'overview'
@@ -74,7 +80,11 @@ type AdminTab =
   | 'read-rank'
   | 'ask-nafij'
   | 'site-reviews'
-  | 'page-media';
+  | 'page-media'
+  | 'services'
+  | 'skills'
+  | 'experiences'
+  | 'education';
 
 export default function AdminDashboard() {
   const { user, logout, isLoading, refreshUser } = useAuth();
@@ -1204,7 +1214,11 @@ export default function AdminDashboard() {
     { id: 'read-rank' as const, label: 'Read & Rank', icon: Tv },
     { id: 'ask-nafij' as const, label: 'Ask Nafij', icon: MessageSquare },
     { id: 'site-reviews' as const, label: 'Site Reviews', icon: ThumbsUp },
-    { id: 'page-media' as const, label: 'Page Media', icon: ImageIcon }
+    { id: 'page-media' as const, label: 'Page Media', icon: ImageIcon },
+    { id: 'services' as const, label: 'Manage Services', icon: Activity },
+    { id: 'skills' as const, label: 'Manage Skills', icon: Cpu },
+    { id: 'experiences' as const, label: 'Manage Experiences', icon: Briefcase },
+    { id: 'education' as const, label: 'Manage Education', icon: Award }
   ];
 
   return (
@@ -2406,6 +2420,26 @@ export default function AdminDashboard() {
               {/* TAB 13: LANDING PAGE CUSTOM MEDIA */}
               {activeTab === 'page-media' && (
                 <PageMediaTab />
+              )}
+
+              {/* TAB 14: SERVICES CMS */}
+              {activeTab === 'services' && (
+                <ServicesTab />
+              )}
+
+              {/* TAB 15: SKILLS CMS */}
+              {activeTab === 'skills' && (
+                <SkillsTab />
+              )}
+
+              {/* TAB 16: EXPERIENCES CMS */}
+              {activeTab === 'experiences' && (
+                <ExperiencesTab />
+              )}
+
+              {/* TAB 17: EDUCATION CMS */}
+              {activeTab === 'education' && (
+                <EducationTab />
               )}
 
             </div>

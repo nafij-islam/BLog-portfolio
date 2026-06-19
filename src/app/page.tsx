@@ -36,9 +36,6 @@ export default function HomePage() {
 
   useEffect(() => {
     // Fetch static mock lists
-    setSkills(mockDb.getSkills());
-    setExperience(mockDb.getExperience());
-    setServices(mockDb.getServices());
     setTestimonials(mockDb.getTestimonials());
 
     // Fetch dynamic backend APIs
@@ -66,6 +63,45 @@ export default function HomePage() {
           if (blogJson.success && blogJson.data && blogJson.data.length > 0) {
             setFeaturedBlog(blogJson.data[0]);
           }
+        }
+
+        // Fetch CMS Services
+        const servicesRes = await fetch('/api/services');
+        if (servicesRes.ok) {
+          const servicesJson = await servicesRes.json();
+          if (servicesJson.success && servicesJson.data && servicesJson.data.length > 0) {
+            setServices(servicesJson.data);
+          } else {
+            setServices(mockDb.getServices());
+          }
+        } else {
+          setServices(mockDb.getServices());
+        }
+
+        // Fetch CMS Skills
+        const skillsRes = await fetch('/api/skills');
+        if (skillsRes.ok) {
+          const skillsJson = await skillsRes.json();
+          if (skillsJson.success && skillsJson.data && skillsJson.data.length > 0) {
+            setSkills(skillsJson.data);
+          } else {
+            setSkills(mockDb.getSkills());
+          }
+        } else {
+          setSkills(mockDb.getSkills());
+        }
+
+        // Fetch CMS Experiences
+        const expRes = await fetch('/api/experiences');
+        if (expRes.ok) {
+          const expJson = await expRes.json();
+          if (expJson.success && expJson.data && expJson.data.length > 0) {
+            setExperience(expJson.data);
+          } else {
+            setExperience(mockDb.getExperience());
+          }
+        } else {
+          setExperience(mockDb.getExperience());
         }
 
         // Fetch Page Media
