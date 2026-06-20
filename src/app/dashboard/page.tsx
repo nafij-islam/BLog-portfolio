@@ -54,8 +54,8 @@ function UserDashboardContent() {
   // Sync tab with query param if present
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'settings') {
-      setActiveTab('settings');
+    if (tabParam) {
+      setActiveTab(tabParam as any);
     }
   }, [searchParams]);
 

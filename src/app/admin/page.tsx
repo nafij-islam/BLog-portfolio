@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import { collection, doc, query, orderBy, onSnapshot, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -89,13 +89,22 @@ type AdminTab =
   | 'experiences'
   | 'education';
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const { user, logout, isLoading, refreshUser } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Tab state
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+
+  // Sync tab with query param if present
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
 
   // DB States
   const [projects, setProjects] = useState<Project[]>([]);
@@ -3209,5 +3218,17 @@ export default function AdminDashboard() {
 
       <Footer />
     </>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex-grow pt-32 pb-20 flex items-center justify-center bg-brand-bg min-h-screen">
+        <LoadingState message="Connecting to secure admin gateway..." />
+      </div>
+    }>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }
