@@ -190,6 +190,7 @@ export default function AdminDashboard() {
 
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [activeMessage, setActiveMessage] = useState<ContactMessage | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   // Confirm dialogue
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -967,6 +968,7 @@ export default function AdminDashboard() {
   // Messages Controls
   const openMessageModal = async (msg: ContactMessage) => {
     setActiveMessage(msg);
+    setReplyText(msg.replyMessage || '');
     setIsMessageModalOpen(true);
     
     if (!msg.read) {
@@ -983,6 +985,37 @@ export default function AdminDashboard() {
       } catch (err) {
         console.error('Failed to mark message as read:', err);
       }
+    }
+  };
+
+  const handleReplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeMessage) return;
+    if (!replyText.trim()) {
+      showToast('Reply message cannot be empty.', 'error');
+      return;
+    }
+
+    setIsActionLoading(true);
+    try {
+      const res = await fetch('/api/admin/messages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: activeMessage.id, replyMessage: replyText.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Reply submitted successfully!', 'success');
+        setIsMessageModalOpen(false);
+        loadData();
+      } else {
+        showToast(data.message || 'Failed to submit reply.', 'error');
+      }
+    } catch (err) {
+      console.error('Submit reply error:', err);
+      showToast('Failed to submit reply.', 'error');
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -2851,6 +2884,40 @@ export default function AdminDashboard() {
             <div className="p-4 bg-brand-card-dark rounded-xl border border-brand-border-white leading-relaxed text-white">
               {activeMessage.message}
             </div>
+
+            {/* Existing reply display */}
+            {activeMessage.replyMessage && (
+              <div className="border-t border-brand-border-white pt-4">
+                <p className="text-[9px] uppercase font-bold text-green-400">YOUR REPLY</p>
+                <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-300 rounded-xl mt-1.5 leading-relaxed">
+                  {activeMessage.replyMessage}
+                </div>
+                {activeMessage.repliedAt && (
+                  <p className="text-[8px] text-brand-text-muted mt-1">Replied on: {new Date(activeMessage.repliedAt).toLocaleString()}</p>
+                )}
+              </div>
+            )}
+
+            {/* Reply Form */}
+            <form onSubmit={handleReplySubmit} className="space-y-3 mt-4 border-t border-brand-border-white pt-4">
+              <label className="text-[9px] uppercase font-bold text-brand-accent block">
+                {activeMessage.replyMessage ? 'Update Reply' : 'Reply to Message'}
+              </label>
+              <textarea
+                placeholder="Write your response to the user..."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="w-full px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all resize-none"
+                rows={4}
+                required
+              />
+              <div className="flex justify-end gap-2">
+                <Button type="submit" variant="primary" size="sm" isLoading={isActionLoading}>
+                  {activeMessage.replyMessage ? 'Update Reply' : 'Send Reply'}
+                </Button>
+              </div>
+            </form>
+
             <div className="pt-3 border-t border-brand-border-white flex justify-end">
               <Button variant="secondary" size="sm" onClick={() => setIsMessageModalOpen(false)}>
                 Close Message

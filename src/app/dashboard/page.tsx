@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter, Award } from 'lucide-react';
+import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter, Award, Mail } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { ApiService } from '@/lib/api-service';
@@ -22,7 +22,7 @@ function UserDashboardContent() {
   const searchParams = useSearchParams();
 
   // Active tab state
-  const [activeTab, setActiveTab] = useState<'overview' | 'liked' | 'comments' | 'settings' | 'challenges'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'liked' | 'comments' | 'settings' | 'challenges' | 'messages'>('overview');
 
   // Dynamic user details
   const [name, setName] = useState('');
@@ -41,6 +41,7 @@ function UserDashboardContent() {
   const [likedBlogs, setLikedBlogs] = useState<BlogPost[]>([]);
   const [userComments, setUserComments] = useState<Comment[]>([]);
   const [userAttempts, setUserAttempts] = useState<any[]>([]);
+  const [userMessages, setUserMessages] = useState<any[]>([]);
 
   // Sync tab with query param if present
   useEffect(() => {
@@ -93,6 +94,15 @@ function UserDashboardContent() {
           const attemptsData = await attemptsRes.json();
           if (attemptsData.success) {
             setUserAttempts(attemptsData.data || []);
+          }
+
+          // Fetch user contact messages
+          const msgRes = await fetch('/api/contact/my-messages');
+          if (msgRes.ok) {
+            const msgData = await msgRes.json();
+            if (msgData.success) {
+              setUserMessages(msgData.data || []);
+            }
           }
         } catch (error) {
           console.error('Failed to load user activity:', error);
@@ -198,6 +208,7 @@ function UserDashboardContent() {
 
   const sidebarTabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
+    { id: 'messages' as const, label: 'My Messages', icon: Mail },
     { id: 'liked' as const, label: 'Liked Articles', icon: Heart },
     { id: 'comments' as const, label: 'Comment History', icon: MessageSquare },
     { id: 'challenges' as const, label: 'My Challenges', icon: Award },
@@ -272,6 +283,7 @@ function UserDashboardContent() {
               <div className="flex items-center justify-between border-b border-brand-border-white pb-4">
                 <h1 className="text-xl font-bold text-white tracking-tight uppercase">
                   {activeTab === 'overview' && 'Dashboard Overview'}
+                  {activeTab === 'messages' && 'My Messages'}
                   {activeTab === 'liked' && 'Liked Articles'}
                   {activeTab === 'comments' && 'Comments History'}
                   {activeTab === 'challenges' && 'My Challenges'}
@@ -465,6 +477,66 @@ function UserDashboardContent() {
                       message="You haven't participated in any timed MCQ challenges yet. Check out the challenge board!"
                       actionText="Browse Challenges"
                       onAction={() => router.push('/read-rank-challenge')}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Tab 5: Messages */}
+              {activeTab === 'messages' && (
+                <div className="space-y-4">
+                  {userMessages.length > 0 ? (
+                    userMessages.map((msg) => (
+                      <Card hoverEffect={false} key={msg.id} className="p-5 border border-brand-border bg-brand-card-dark/30">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-3 border-b border-brand-border-white/5 mb-3">
+                          <div>
+                            <span className="text-[9px] font-bold text-brand-accent uppercase tracking-wider block mb-1">
+                              Subject: {msg.subject}
+                            </span>
+                            <h4 className="text-sm font-bold text-white leading-none">
+                              {msg.name} ({msg.email})
+                            </h4>
+                          </div>
+                          <div>
+                            {msg.status === 'replied' ? (
+                              <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 text-[9px] font-bold uppercase rounded">
+                                Replied
+                              </span>
+                            ) : msg.status === 'read' ? (
+                              <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-bold uppercase rounded">
+                                Read
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-bold uppercase rounded">
+                                New
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-white leading-relaxed p-3.5 bg-brand-card-dark rounded-xl border border-brand-border-white/5 mb-4 animate-none">
+                          <p className="text-[9px] uppercase font-bold text-brand-text-muted mb-1">Your Message:</p>
+                          {msg.message}
+                        </div>
+
+                        {msg.replyMessage && (
+                          <div className="p-4 bg-green-500/5 border border-green-500/10 rounded-xl leading-relaxed text-xs text-brand-text-muted mt-2 relative overflow-hidden animate-none">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 rounded-full blur-xl pointer-events-none" />
+                            <p className="text-[9px] uppercase font-bold text-green-400 mb-1">Response from Nafij:</p>
+                            <p className="text-white">{msg.replyMessage}</p>
+                            {msg.repliedAt && (
+                              <p className="text-[8px] text-brand-text-muted mt-2">Replied on: {new Date(msg.repliedAt).toLocaleString()}</p>
+                            )}
+                          </div>
+                        )}
+                      </Card>
+                    ))
+                  ) : (
+                    <EmptyState
+                      title="No Messages"
+                      message="You haven't sent any contact messages yet. If you have any inquiries, drop a message on our contact page!"
+                      actionText="Send Message"
+                      onAction={() => router.push('/contact')}
                     />
                   )}
                 </div>

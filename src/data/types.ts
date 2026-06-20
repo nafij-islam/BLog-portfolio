@@ -118,6 +118,9 @@ export interface ContactMessage {
   message: string;
   date: string;
   read: boolean;
+  replyMessage?: string;
+  repliedAt?: string;
+  status?: string;
 }
 
 export interface SiteSettings {

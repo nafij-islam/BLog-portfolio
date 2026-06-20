@@ -13,7 +13,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { id, status, read } = body;
+    const { id, status, read, replyMessage } = body;
 
     if (!id) {
       return ApiResponse.error('Message ID is required', 400);
@@ -25,7 +25,11 @@ export async function PUT(req: NextRequest) {
     }
 
     const updates: any = {};
-    if (status) {
+    if (replyMessage !== undefined) {
+      updates.replyMessage = replyMessage;
+      updates.repliedAt = new Date();
+      updates.status = 'replied';
+    } else if (status) {
       updates.status = status;
     } else if (read !== undefined) {
       updates.status = read ? 'read' : 'new';

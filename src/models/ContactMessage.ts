@@ -6,6 +6,8 @@ export interface IContactMessage extends Document {
   subject: string;
   message: string;
   status: 'new' | 'read' | 'replied' | 'archived';
+  replyMessage?: string;
+  repliedAt?: Date;
   createdAt: Date;
 }
 
@@ -16,6 +18,8 @@ const ContactMessageSchema = new Schema<IContactMessage>(
     subject: { type: String, required: true },
     message: { type: String, required: true },
     status: { type: String, enum: ['new', 'read', 'replied', 'archived'], default: 'new' },
+    replyMessage: { type: String, default: '' },
+    repliedAt: { type: Date },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

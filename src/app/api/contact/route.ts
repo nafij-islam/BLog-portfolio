@@ -57,8 +57,11 @@ export async function GET(req: NextRequest) {
       email: m.email,
       subject: m.subject,
       message: m.message,
+      replyMessage: m.replyMessage || '',
+      repliedAt: m.repliedAt ? m.repliedAt.toISOString() : null,
       date: m.createdAt.toISOString(),
       read: m.status !== 'new',
+      status: m.status || 'new',
     }));
 
     return ApiResponse.success(formatted, 'Contact messages fetched successfully');
