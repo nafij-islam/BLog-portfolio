@@ -170,7 +170,7 @@ function UserDashboardContent() {
 
     const messageText = typedMessage.trim();
     setTypedMessage('');
-    setIsSendingMessage(false);
+    setIsSendingMessage(true);
 
     try {
       const docId = user.email.toLowerCase().trim();
@@ -193,6 +193,8 @@ function UserDashboardContent() {
     } catch (err: any) {
       console.error("Failed to send real-time message:", err);
       showToast('Failed to send message. Check Firebase console rules.', 'error');
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
