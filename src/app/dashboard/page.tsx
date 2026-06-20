@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter, Award, Mail } from 'lucide-react';
+import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter, Award, Mail, Send } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, doc, addDoc, setDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { ApiService } from '@/lib/api-service';
@@ -22,7 +24,7 @@ function UserDashboardContent() {
   const searchParams = useSearchParams();
 
   // Active tab state
-  const [activeTab, setActiveTab] = useState<'overview' | 'liked' | 'comments' | 'settings' | 'challenges' | 'messages'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'liked' | 'comments' | 'settings' | 'challenges' | 'messages' | 'chat'>('overview');
 
   // Dynamic user details
   const [name, setName] = useState('');
@@ -42,6 +44,12 @@ function UserDashboardContent() {
   const [userComments, setUserComments] = useState<Comment[]>([]);
   const [userAttempts, setUserAttempts] = useState<any[]>([]);
   const [userMessages, setUserMessages] = useState<any[]>([]);
+
+  // Chat states
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [typedMessage, setTypedMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   // Sync tab with query param if present
   useEffect(() => {
@@ -112,6 +120,81 @@ function UserDashboardContent() {
       fetchUserActivities();
     }
   }, [user]);
+
+  // Firestore Real-Time Chat Listener
+  useEffect(() => {
+    if (!user || activeTab !== 'chat') return;
+
+    const docId = user.email.toLowerCase().trim();
+    const messagesRef = collection(db, 'chats', docId, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs: any[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        msgs.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() ? data.createdAt.toDate().toISOString() : new Date().toISOString()
+        });
+      });
+      setChatMessages(msgs);
+    }, (error) => {
+      console.error("Firestore live chat listen error:", error);
+    });
+
+    // Clear unread status for user
+    const conversationRef = doc(db, 'chats', docId);
+    setDoc(conversationRef, { unreadByUser: false }, { merge: true }).catch(err => {
+      console.error("Failed to reset user unread status:", err);
+    });
+
+    return () => unsubscribe();
+  }, [user, activeTab]);
+
+  // Auto Scroll Chat
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      scrollToBottom();
+    }
+  }, [chatMessages, activeTab]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !typedMessage.trim() || isSendingMessage) return;
+
+    const messageText = typedMessage.trim();
+    setTypedMessage('');
+    setIsSendingMessage(false);
+
+    try {
+      const docId = user.email.toLowerCase().trim();
+      const messagesRef = collection(db, 'chats', docId, 'messages');
+      await addDoc(messagesRef, {
+        sender: 'user',
+        text: messageText,
+        createdAt: serverTimestamp(),
+      });
+
+      const conversationRef = doc(db, 'chats', docId);
+      await setDoc(conversationRef, {
+        userEmail: user.email.toLowerCase().trim(),
+        userName: user.name,
+        lastMessage: messageText,
+        lastMessageAt: serverTimestamp(),
+        unreadByAdmin: true,
+        unreadByUser: false,
+      }, { merge: true });
+    } catch (err: any) {
+      console.error("Failed to send real-time message:", err);
+      showToast('Failed to send message. Check Firebase console rules.', 'error');
+    }
+  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -208,6 +291,7 @@ function UserDashboardContent() {
 
   const sidebarTabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
+    { id: 'chat' as const, label: 'Live Chat', icon: MessageSquare },
     { id: 'messages' as const, label: 'My Messages', icon: Mail },
     { id: 'liked' as const, label: 'Liked Articles', icon: Heart },
     { id: 'comments' as const, label: 'Comment History', icon: MessageSquare },
@@ -283,6 +367,7 @@ function UserDashboardContent() {
               <div className="flex items-center justify-between border-b border-brand-border-white pb-4">
                 <h1 className="text-xl font-bold text-white tracking-tight uppercase">
                   {activeTab === 'overview' && 'Dashboard Overview'}
+                  {activeTab === 'chat' && 'Real-Time Live Chat'}
                   {activeTab === 'messages' && 'My Messages'}
                   {activeTab === 'liked' && 'Liked Articles'}
                   {activeTab === 'comments' && 'Comments History'}
@@ -407,6 +492,83 @@ function UserDashboardContent() {
                     />
                   )}
                 </div>
+              )}
+
+              {/* Tab: Chat */}
+              {activeTab === 'chat' && (
+                <Card hoverEffect={false} className="p-4 md:p-6 border border-brand-border-white bg-brand-card-dark/25 flex flex-col h-[550px] relative overflow-hidden">
+                  {/* Messages Area */}
+                  <div className="flex-grow overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-brand-accent/20 scrollbar-track-transparent">
+                    {chatMessages.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                        <div className="w-12 h-12 rounded-full bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent mb-3 animate-pulse">
+                          <MessageSquare className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-sm font-bold text-white mb-1">Start a Conversation</h4>
+                        <p className="text-xs text-brand-text-muted max-w-sm">
+                          Send a message to Nafij. He will receive it in his admin panel and can reply to you in real-time.
+                        </p>
+                      </div>
+                    ) : (
+                      chatMessages.map((msg) => {
+                        const isMe = msg.sender === 'user';
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2`}
+                          >
+                            {!isMe && (
+                              <div className="w-6 h-6 rounded-full bg-brand-accent/20 border border-brand-accent/30 flex items-center justify-center shrink-0 text-[10px] font-bold text-brand-accent">
+                                N
+                              </div>
+                            )}
+                            <div className="max-w-[75%] sm:max-w-[60%] flex flex-col gap-1">
+                              <div
+                                className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed break-words shadow-sm ${
+                                  isMe
+                                    ? 'bg-brand-accent text-white rounded-br-none'
+                                    : 'bg-brand-card-light text-white border border-brand-border-white/5 rounded-bl-none'
+                                }`}
+                              >
+                                {msg.text}
+                              </div>
+                              <span
+                                className={`text-[9px] text-brand-text-muted block px-1 ${
+                                  isMe ? 'text-right' : 'text-left'
+                                }`}
+                              >
+                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* Message Input Box */}
+                  <form onSubmit={handleSendMessage} className="mt-4 pt-3 border-t border-brand-border-white/5 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Type a message to Nafij..."
+                      value={typedMessage}
+                      onChange={(e) => setTypedMessage(e.target.value)}
+                      className="flex-grow px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all placeholder:text-brand-text-muted"
+                      disabled={isSendingMessage}
+                      required
+                    />
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      className="px-4 py-2.5 text-xs font-bold"
+                      isLoading={isSendingMessage}
+                      disabled={!typedMessage.trim()}
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </form>
+                </Card>
               )}
 
               {/* Tab: Challenges */}

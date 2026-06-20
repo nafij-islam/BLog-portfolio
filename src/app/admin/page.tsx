@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import { collection, doc, query, orderBy, onSnapshot, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import {
   LayoutDashboard,
   Briefcase,
@@ -73,6 +75,7 @@ type AdminTab =
   | 'comments'
   | 'users'
   | 'contacts'
+  | 'chats'
   | 'settings'
   | 'contactSettings'
   | 'profile'
@@ -108,6 +111,115 @@ export default function AdminDashboard() {
 
   // Loading indicator for actions
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // Live chats states
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string>('');
+  const [currentChatMessages, setCurrentChatMessages] = useState<any[]>([]);
+  const [adminReplyText, setAdminReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const adminMessagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Listen to all conversations in real-time
+  useEffect(() => {
+    if (!user || user.role !== 'admin' || activeTab !== 'chats') return;
+
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, orderBy('lastMessageAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const convs: any[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        convs.push({
+          id: doc.id,
+          ...data,
+          lastMessageAt: data.lastMessageAt?.toDate() ? data.lastMessageAt.toDate().toISOString() : new Date().toISOString()
+        });
+      });
+      setConversations(convs);
+    }, (error) => {
+      console.error("Firestore conversations listen error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user, activeTab]);
+
+  // Listen to selected conversation's messages
+  useEffect(() => {
+    if (!user || user.role !== 'admin' || activeTab !== 'chats' || !selectedUserEmail) {
+      setCurrentChatMessages([]);
+      return;
+    }
+
+    const messagesRef = collection(db, 'chats', selectedUserEmail, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs: any[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        msgs.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() ? data.createdAt.toDate().toISOString() : new Date().toISOString()
+        });
+      });
+      setCurrentChatMessages(msgs);
+    }, (error) => {
+      console.error("Firestore selected chat listen error:", error);
+    });
+
+    // Mark conversation as read by admin when selected
+    const conversationRef = doc(db, 'chats', selectedUserEmail);
+    setDoc(conversationRef, { unreadByAdmin: false }, { merge: true }).catch(err => {
+      console.error("Failed to mark conversation read by admin:", err);
+    });
+
+    return () => unsubscribe();
+  }, [user, activeTab, selectedUserEmail]);
+
+  const scrollToAdminChatBottom = () => {
+    adminMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (activeTab === 'chats' && selectedUserEmail) {
+      scrollToAdminChatBottom();
+    }
+  }, [currentChatMessages, activeTab, selectedUserEmail]);
+
+  const handleSendAdminReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUserEmail || !adminReplyText.trim() || isSendingReply) return;
+
+    const messageText = adminReplyText.trim();
+    setAdminReplyText('');
+    setIsSendingReply(true);
+
+    try {
+      const messagesRef = collection(db, 'chats', selectedUserEmail, 'messages');
+      await addDoc(messagesRef, {
+        sender: 'admin',
+        text: messageText,
+        createdAt: serverTimestamp(),
+      });
+
+      const conversationRef = doc(db, 'chats', selectedUserEmail);
+      await setDoc(conversationRef, {
+        lastMessage: messageText,
+        lastMessageAt: serverTimestamp(),
+        unreadByUser: true,
+        unreadByAdmin: false,
+      }, { merge: true });
+    } catch (err: any) {
+      console.error("Failed to send admin reply:", err);
+      showToast('Failed to send reply. Check Firestore Rules.', 'error');
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
 
   // Admin search and pagination states
   const [adminSearchInput, setAdminSearchInput] = useState('');
@@ -1235,6 +1347,7 @@ export default function AdminDashboard() {
 
   const adminMenuTabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
+    { id: 'chats' as const, label: 'Live Chats', icon: MessageSquare },
     { id: 'projects' as const, label: 'Manage Projects', icon: Briefcase },
     { id: 'blogs' as const, label: 'Manage Blogs', icon: BookOpen },
     { id: 'comments' as const, label: 'Manage Comments', icon: MessageSquare },
@@ -2473,6 +2586,170 @@ export default function AdminDashboard() {
               {/* TAB 17: EDUCATION CMS */}
               {activeTab === 'education' && (
                 <EducationTab />
+              )}
+
+              {/* TAB: LIVE CHATS */}
+              {activeTab === 'chats' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] text-left">
+                  
+                  {/* Left Pane: Conversations List */}
+                  <Card hoverEffect={false} className="lg:col-span-1 border border-brand-border-white bg-brand-card-dark/25 p-4 flex flex-col h-full overflow-hidden">
+                    <div className="pb-3 border-b border-brand-border-white/5 mb-3 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xs font-bold text-white uppercase tracking-wider">Conversations</h3>
+                        <p className="text-[10px] text-brand-text-muted mt-0.5">Real-time inquiries</p>
+                      </div>
+                      <span className="px-2 py-0.5 bg-brand-accent/10 border border-brand-accent/20 text-[8px] font-bold text-brand-accent rounded-full">
+                        {conversations.length} Active
+                      </span>
+                    </div>
+                    <div className="flex-grow overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-brand-accent/20">
+                      {conversations.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-center p-4">
+                          <p className="text-xs text-brand-text-muted">No active live chats.</p>
+                        </div>
+                      ) : (
+                        conversations.map((conv) => {
+                          const isActive = selectedUserEmail === conv.userEmail;
+                          const isUnread = conv.unreadByAdmin;
+                          return (
+                            <button
+                              key={conv.id}
+                              onClick={() => {
+                                setSelectedUserEmail(conv.userEmail);
+                                setSelectedUserName(conv.userName || 'User');
+                              }}
+                              className={`w-full text-left p-3 rounded-xl transition-all border flex items-center justify-between group cursor-pointer ${
+                                isActive
+                                  ? 'bg-brand-accent/10 border-brand-accent/35 text-white'
+                                  : 'bg-brand-card-dark/45 border-brand-border-white/5 hover:border-brand-border-white/20 text-brand-text-muted hover:text-white'
+                              }`}
+                            >
+                              <div className="min-w-0 flex-grow pr-2">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className={`text-xs font-bold truncate leading-none ${isActive ? 'text-white' : 'text-white/90 group-hover:text-white'}`}>
+                                    {conv.userName || 'User'}
+                                  </span>
+                                  {isUnread && (
+                                    <span className="w-2 h-2 rounded-full bg-green-400 shrink-0 animate-pulse" />
+                                  )}
+                                </div>
+                                <p className="text-[10px] truncate max-w-full text-brand-text-muted mb-0.5 italic">
+                                  {conv.lastMessage || 'No messages yet'}
+                                </p>
+                                <span className="text-[8px] text-brand-text-muted block">
+                                  {conv.userEmail}
+                                </span>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-[8px] text-brand-text-muted block">
+                                  {new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </Card>
+
+                  {/* Right Pane: Selected Chat Panel */}
+                  <Card hoverEffect={false} className="lg:col-span-2 border border-brand-border-white bg-brand-card-dark/25 p-4 md:p-6 flex flex-col h-full overflow-hidden">
+                    {!selectedUserEmail ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                        <div className="w-12 h-12 rounded-full bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent mb-3 animate-pulse">
+                          <MessageSquare className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-sm font-bold text-white mb-1">Select a Conversation</h4>
+                        <p className="text-xs text-brand-text-muted max-w-sm">
+                          Choose a thread from the left menu to display message history and respond in real-time.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col h-full justify-between overflow-hidden">
+                        
+                        {/* Conversation Header */}
+                        <div className="pb-3 border-b border-brand-border-white/5 mb-4 flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-extrabold text-white leading-none">{selectedUserName}</h3>
+                            <span className="text-[10px] text-brand-text-muted mt-1 block">{selectedUserEmail}</span>
+                          </div>
+                          <span className="px-2.5 py-0.5 bg-green-500/10 border border-green-500/20 text-[9px] font-bold text-green-400 rounded-full">
+                            Active Session
+                          </span>
+                        </div>
+
+                        {/* Messages Box */}
+                        <div className="flex-grow overflow-y-auto space-y-4 pr-1 scrollbar-thin scrollbar-thumb-brand-accent/20">
+                          {currentChatMessages.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-center text-brand-text-muted text-xs">
+                              Loading conversation messages...
+                            </div>
+                          ) : (
+                            currentChatMessages.map((msg) => {
+                              const isMe = msg.sender === 'admin';
+                              return (
+                                <div
+                                  key={msg.id}
+                                  className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2`}
+                                >
+                                  {!isMe && (
+                                    <div className="w-6 h-6 rounded-full bg-brand-accent/20 border border-brand-accent/30 flex items-center justify-center shrink-0 text-[10px] font-bold text-brand-accent">
+                                      U
+                                    </div>
+                                  )}
+                                  <div className="max-w-[75%] sm:max-w-[60%] flex flex-col gap-1">
+                                    <div
+                                      className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed break-words shadow-sm ${
+                                        isMe
+                                          ? 'bg-brand-accent text-white rounded-br-none'
+                                          : 'bg-brand-card-light text-white border border-brand-border-white/5 rounded-bl-none'
+                                      }`}
+                                    >
+                                      {msg.text}
+                                    </div>
+                                    <span
+                                      className={`text-[9px] text-brand-text-muted block px-1 ${
+                                        isMe ? 'text-right' : 'text-left'
+                                      }`}
+                                    >
+                                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                          <div ref={adminMessagesEndRef} />
+                        </div>
+
+                        {/* Input Box */}
+                        <form onSubmit={handleSendAdminReply} className="mt-4 pt-3 border-t border-brand-border-white/5 flex gap-2">
+                          <input
+                            type="text"
+                            placeholder={`Reply to ${selectedUserName}...`}
+                            value={adminReplyText}
+                            onChange={(e) => setAdminReplyText(e.target.value)}
+                            className="flex-grow px-4 py-2.5 text-xs bg-brand-card-dark border border-brand-border-white rounded-xl text-white focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/30 transition-all placeholder:text-brand-text-muted"
+                            disabled={isSendingReply}
+                            required
+                          />
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            className="px-4 py-2.5 text-xs font-bold flex items-center gap-1.5"
+                            isLoading={isSendingReply}
+                            disabled={!adminReplyText.trim()}
+                          >
+                            Send Reply
+                          </Button>
+                        </form>
+
+                      </div>
+                    )}
+                  </Card>
+
+                </div>
               )}
 
             </div>
