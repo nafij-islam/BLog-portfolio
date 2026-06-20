@@ -2,10 +2,81 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { MessageCircle } from 'lucide-react';
 
 export const FloatingSocial = () => {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handleChatClick = () => {
+    if (user) {
+      if (user.role === 'admin') {
+        router.push('/admin?tab=chats');
+      } else {
+        router.push('/dashboard?tab=chat');
+      }
+    } else {
+      router.push('/login?redirect=/dashboard?tab=chat');
+    }
+  };
+
+  const chatTooltip = user?.role === 'admin' ? 'View Live Chats' : 'Live Chat with Nafij';
+
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
+      {/* Real-Time Live Chat Floating Button */}
+      <div className="relative group flex items-center justify-end">
+        {/* Modern Slide-in Tooltip */}
+        <span className="absolute right-16 bg-brand-card-dark/95 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-xl border border-brand-border-white opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-2xl translate-x-2 group-hover:translate-x-0">
+          {chatTooltip}
+        </span>
+
+        {/* Pulsing Aura */}
+        <motion.div
+          className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#FF007A] to-[#7928CA] opacity-35 pointer-events-none"
+          animate={{ scale: [1, 1.35, 1], opacity: [0.35, 0, 0.35] }}
+          transition={{
+            duration: 2.8,
+            repeat: Infinity,
+            ease: 'easeInOut',
+            delay: 0.7,
+          }}
+        />
+
+        {/* Floating Button */}
+        <motion.button
+          onClick={handleChatClick}
+          aria-label={chatTooltip}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            y: [0, -5, 0],
+          }}
+          transition={{
+            opacity: { duration: 0.5 },
+            scale: { type: 'spring', stiffness: 260, damping: 20 },
+            y: {
+              duration: 3.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: 0.88,
+            }
+          }}
+          whileHover={{ 
+            scale: 1.12, 
+            rotate: 8,
+            transition: { type: 'spring', stiffness: 400, damping: 12 }
+          }}
+          whileTap={{ scale: 0.94 }}
+          className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-tr from-[#FF007A] to-[#7928CA] text-white rounded-full shadow-[0_0_20px_rgba(255,0,122,0.45)] border border-white/20 hover:shadow-[0_0_30px_rgba(255,0,122,0.7)] transition-shadow duration-300 cursor-pointer"
+        >
+          <MessageCircle className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5" />
+        </motion.button>
+      </div>
+
       {/* Facebook Floating Button */}
       <div className="relative group flex items-center justify-end">
         {/* Modern Slide-in Tooltip */}
