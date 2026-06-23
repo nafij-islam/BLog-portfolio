@@ -151,10 +151,8 @@ ${question}
       </div>
     `;
 
-    // Run async email dispatch
-    sendNotificationEmail(emailSubject, emailHtml).catch(err => {
-      console.error('Failed to run Q&A email dispatch async:', err);
-    });
+    // Await the email dispatch to ensure the serverless container does not terminate prematurely
+    await sendNotificationEmail(emailSubject, emailHtml);
 
     return ApiResponse.success(newQA, 'Question submitted successfully. Waiting for response.', 201);
   } catch (err: any) {

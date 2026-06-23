@@ -146,10 +146,8 @@ ${extraMessage}
       </div>
     `;
 
-    // Run async email dispatch
-    sendNotificationEmail(emailSubject, emailHtml).catch(err => {
-      console.error('Failed to run Estimator email dispatch async:', err);
-    });
+    // Await the email dispatch to ensure the serverless container does not terminate prematurely
+    await sendNotificationEmail(emailSubject, emailHtml);
 
     return ApiResponse.success(newBrief, 'Project brief submitted successfully', 201);
   } catch (err: any) {

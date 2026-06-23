@@ -53,10 +53,8 @@ ${message}
       </div>
     `;
     
-    // We run it asynchronously to avoid delaying user response
-    sendNotificationEmail(emailSubject, emailHtml).catch(err => {
-      console.error('Failed to run contact email dispatch async:', err);
-    });
+    // Await the email dispatch to ensure the serverless container does not terminate prematurely
+    await sendNotificationEmail(emailSubject, emailHtml);
 
     const formatted = {
       id: newMessage._id.toString(),
