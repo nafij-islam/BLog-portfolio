@@ -4,6 +4,7 @@ import ContactMessage from '@/models/ContactMessage';
 import { AuthHelper } from '@/lib/auth';
 import { ApiResponse } from '@/lib/api-response';
 import { Validators } from '@/lib/validators';
+import { sendNotificationEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,6 +23,39 @@ export async function POST(req: NextRequest) {
       subject: subject.trim(),
       message: message.trim(),
       status: 'new',
+    });
+
+    // Send email alert to Gmail
+    const emailSubject = `[Portfolio Contact] - New Message from ${name}`;
+    const emailHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; background-color: #ffffff; color: #333333;">
+        <h2 style="color: #ff653f; border-bottom: 2px solid #ff653f; padding-bottom: 10px; margin-top: 0;">New Contact Message</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; width: 120px; border-bottom: 1px solid #f9f9f9;">Name:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #f9f9f9;">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #f9f9f9;">Email:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #f9f9f9;"><a href="mailto:${email}" style="color: #ff653f; text-decoration: none;">${email}</a></td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #f9f9f9;">Subject:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-weight: 500;">${subject}</td>
+          </tr>
+        </table>
+        <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #ff653f; border-radius: 4px; white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #444444;">
+${message}
+        </div>
+        <p style="font-size: 11px; color: #888; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; text-align: center;">
+          This message was sent from your portfolio website's contact form.
+        </p>
+      </div>
+    `;
+    
+    // We run it asynchronously to avoid delaying user response
+    sendNotificationEmail(emailSubject, emailHtml).catch(err => {
+      console.error('Failed to run contact email dispatch async:', err);
     });
 
     const formatted = {

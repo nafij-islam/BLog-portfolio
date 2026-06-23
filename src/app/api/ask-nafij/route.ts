@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import AskNafijQuestion from '@/models/AskNafijQuestion';
 import { AuthHelper } from '@/lib/auth';
 import { ApiResponse } from '@/lib/api-response';
+import { sendNotificationEmail } from '@/lib/email';
 
 export async function GET(req: NextRequest) {
   try {
@@ -118,6 +119,41 @@ export async function POST(req: NextRequest) {
       tags: tags || [],
       status: 'pending',
       isFeatured: false,
+    });
+
+    // Send Q&A email alert to Gmail
+    const qaCategory = category || 'General';
+    const emailSubject = `[Portfolio Q&A] - New Question from ${name}`;
+    const emailHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; background-color: #ffffff; color: #333333;">
+        <h2 style="color: #ff653f; border-bottom: 2px solid #ff653f; padding-bottom: 10px; margin-top: 0;">New Q&A Question Submitted</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; width: 150px; border-bottom: 1px solid #f9f9f9;">Submitter Name:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #f9f9f9;">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #f9f9f9;">Submitter Email:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #f9f9f9;"><a href="mailto:${email}" style="color: #ff653f; text-decoration: none;">${email}</a></td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #f9f9f9;">Category:</td>
+            <td style="padding: 8px 0; border-bottom: 1px solid #f9f9f9; font-weight: 500;">${qaCategory}</td>
+          </tr>
+        </table>
+        <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #ff653f; border-radius: 4px; font-size: 14px; line-height: 1.6; color: #444444; white-space: pre-wrap;">
+          <strong>Question:</strong><br/>
+${question}
+        </div>
+        <p style="font-size: 11px; color: #888; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; text-align: center;">
+          You can reply to this question or approve it directly from your portfolio admin dashboard under the "Ask Nafij" tab.
+        </p>
+      </div>
+    `;
+
+    // Run async email dispatch
+    sendNotificationEmail(emailSubject, emailHtml).catch(err => {
+      console.error('Failed to run Q&A email dispatch async:', err);
     });
 
     return ApiResponse.success(newQA, 'Question submitted successfully. Waiting for response.', 201);
