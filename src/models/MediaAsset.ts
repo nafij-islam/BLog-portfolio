@@ -9,7 +9,7 @@ export interface IMediaAsset extends Document {
   fileName: string;
   fileType: string;
   fileSize: number;
-  folder: 'blog' | 'project' | 'avatar' | 'seo' | 'general';
+  folder: 'blog' | 'project' | 'avatar' | 'seo' | 'general' | 'course';
   altText?: string;
   caption?: string;
   createdAt: Date;
@@ -25,7 +25,7 @@ const MediaAssetSchema = new Schema<IMediaAsset>(
     fileName: { type: String, required: true },
     fileType: { type: String, required: true },
     fileSize: { type: Number, required: true },
-    folder: { type: String, enum: ['blog', 'project', 'avatar', 'seo', 'general'], default: 'general' },
+    folder: { type: String, enum: ['blog', 'project', 'avatar', 'seo', 'general', 'course'], default: 'general' },
     altText: { type: String, default: '' },
     caption: { type: String, default: '' },
   },

@@ -56,7 +56,6 @@ const CourseSchema = new Schema<ICourse>(
   { timestamps: true }
 );
 
-CourseSchema.index({ slug: 1 }, { unique: true });
 CourseSchema.index({ status: 1, isFeatured: 1 });
 
 export default models.Course || model<ICourse>('Course', CourseSchema);
