@@ -34,6 +34,11 @@ export default function HomePage() {
   const [featuredQAs, setFeaturedQAs] = useState<any[]>([]);
   const [featuredReviews, setFeaturedReviews] = useState<any[]>([]);
 
+  // Course System states
+  const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
+  const [courseSettings, setCourseSettings] = useState<any>(null);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+
   useEffect(() => {
     // Fetch static mock lists
     setTestimonials(mockDb.getTestimonials());
@@ -140,8 +145,35 @@ export default function HomePage() {
             setFeaturedReviews(reviewsJson.data?.slice(0, 3) || []);
           }
         }
+
+        // Fetch Course System Data
+        try {
+          const coursesRes = await fetch('/api/courses?isFeatured=true&limit=3');
+          if (coursesRes.ok) {
+            const coursesJson = await coursesRes.json();
+            if (coursesJson.success && coursesJson.data) {
+              setFeaturedCourses(coursesJson.data);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch featured courses:', err);
+        }
+
+        try {
+          const courseSettingsRes = await fetch('/api/course-settings');
+          if (courseSettingsRes.ok) {
+            const courseSettingsJson = await courseSettingsRes.json();
+            if (courseSettingsJson.success && courseSettingsJson.data) {
+              setCourseSettings(courseSettingsJson.data);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch course settings:', err);
+        }
+        setCoursesLoading(false);
       } catch (err) {
         console.error('Failed to fetch dynamic homepage data:', err);
+        setCoursesLoading(false);
       }
     };
     fetchDynamicData();
@@ -281,6 +313,115 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* COURSES SECTION */}
+      {(!coursesLoading && featuredCourses.length > 0) && (
+        <section className="py-20 bg-brand-bg relative overflow-hidden">
+          {/* Glow effects */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-accent/5 rounded-full blur-[120px] pointer-events-none" />
+
+          <div className="max-w-7xl mx-auto px-6 md:px-8 relative z-10">
+            <SectionHeading
+              badge="Learn With Nafij"
+              title="Featured Courses"
+              subtitle="Practical courses to help you build real-world web projects step by step."
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredCourses.map((course, idx) => (
+                <motion.div
+                  key={course.id}
+                  initial={{ opacity: 0, y: 25 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  className="group flex flex-col h-full bg-gradient-to-tr from-brand-card to-brand-card-light border border-brand-border-white hover:border-brand-accent/40 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                >
+                  {/* Thumbnail */}
+                  <div className="relative aspect-video w-full overflow-hidden bg-brand-card-dark border-b border-brand-border-white">
+                    <img
+                      src={course.thumbnailUrl || '/course-placeholder.jpg'}
+                      alt={course.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    {course.badge && course.badge !== 'none' && (
+                      <span className="absolute top-3 left-3 px-2.5 py-0.5 bg-brand-accent text-white font-extrabold text-[8px] uppercase tracking-wider rounded-md shadow">
+                        {course.badge}
+                      </span>
+                    )}
+                    <span className="absolute bottom-3 right-3 px-2 py-0.5 bg-brand-bg/80 backdrop-blur text-[10px] font-bold text-white rounded">
+                      {course.level}
+                    </span>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-5 flex flex-col flex-grow text-left">
+                    <span className="text-[10px] font-bold text-brand-accent uppercase tracking-wider">
+                      {course.category}
+                    </span>
+                    <h3 className="text-sm font-bold text-white tracking-tight leading-snug mt-1 group-hover:text-brand-accent transition-colors">
+                      {course.title}
+                    </h3>
+                    <p className="text-xs text-brand-text-muted mt-2 line-clamp-2 leading-relaxed flex-grow">
+                      {course.shortDescription}
+                    </p>
+
+                    {/* Meta info */}
+                    <div className="flex items-center justify-between border-t border-brand-border-white/10 pt-4 mt-4 text-[10px] text-brand-text-muted">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {Math.round(course.totalDurationMinutes / 60)} hrs
+                      </span>
+                      <span>•</span>
+                      <span>{course.totalLessons} Lessons</span>
+                    </div>
+
+                    {/* Price & Action */}
+                    <div className="flex items-center justify-between mt-5 pt-3 border-t border-brand-border-white/10">
+                      <div>
+                        {course.salePrice !== undefined && course.salePrice !== null ? (
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-extrabold text-white">৳{course.salePrice}</span>
+                            <span className="text-[10px] text-brand-text-muted line-through">৳{course.price}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-extrabold text-white">
+                            {course.price === 0 ? 'Free' : `৳${course.price}`}
+                          </span>
+                        )}
+                      </div>
+                      <Link href={`/courses/${course.slug}`}>
+                        <Button variant="outline" size="sm" className="py-1 px-3 text-[10px]">
+                          View Course
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Skeleton Loading State */}
+      {coursesLoading && (
+        <section className="py-20 bg-brand-bg relative">
+          <div className="max-w-7xl mx-auto px-6 md:px-8">
+            <SectionHeading
+              badge="Learn With Nafij"
+              title="Featured Courses"
+              subtitle="Practical courses to help you build real-world web projects step by step."
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="animate-pulse bg-brand-card/30 border border-brand-border-white/5 rounded-2xl aspect-video h-64" />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 2. SERVICES SECTION */}
       <section className="py-20 bg-brand-card-dark/45 border-y border-brand-border-white relative">
@@ -666,6 +807,36 @@ export default function HomePage() {
       )}
 
       {/* 7. FINAL CTA SECTION */}
+      {/* COURSE ENROLLMENT BANNER */}
+      {(!coursesLoading && courseSettings && courseSettings.showCourseSectionOnHome !== false) && (
+        <section className="py-12 bg-brand-card-dark/45 border-y border-brand-border-white relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-brand-accent/5 rounded-full blur-[100px] pointer-events-none" />
+          
+          <div className="max-w-5xl mx-auto px-6 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex-1 text-left">
+              <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">
+                {courseSettings.homeBannerTitle || "Start Learning Practical Web Development"}
+              </h2>
+              <p className="text-xs md:text-sm text-brand-text-muted mt-2 max-w-2xl leading-relaxed">
+                {courseSettings.homeBannerSubtitle || "Learn by building real projects with clear step-by-step lessons."}
+              </p>
+            </div>
+            <div className="shrink-0 flex items-center gap-4">
+              {courseSettings.homeBannerImageUrl && (
+                <div className="hidden lg:block w-24 h-16 rounded-xl overflow-hidden border border-brand-border-white">
+                  <img src={courseSettings.homeBannerImageUrl} alt="Banner Thumbnail" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <Link href={courseSettings.homeBannerCtaLink || "/courses"}>
+                <Button variant="primary" size="md" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                  {courseSettings.homeBannerCtaText || "Explore Courses"}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="py-24 relative overflow-hidden text-center">
         {/* Background particle glows */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-brand-accent/20 rounded-full blur-[100px] pointer-events-none" />

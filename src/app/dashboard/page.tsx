@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter, Award, Mail, Send } from 'lucide-react';
+import { LayoutDashboard, Heart, MessageSquare, Settings, LogOut, User as UserIcon, Save, Calendar, ShieldAlert, Camera, Globe, Github, Linkedin, Twitter, Award, Mail, Send, BookOpen, Clock } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, doc, addDoc, setDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
@@ -24,7 +24,7 @@ function UserDashboardContent() {
   const searchParams = useSearchParams();
 
   // Active tab state
-  const [activeTab, setActiveTab] = useState<'overview' | 'liked' | 'comments' | 'settings' | 'challenges' | 'messages' | 'chat'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'liked' | 'comments' | 'settings' | 'challenges' | 'messages' | 'chat'>('overview');
 
   // Dynamic user details
   const [name, setName] = useState('');
@@ -38,6 +38,11 @@ function UserDashboardContent() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Course System states
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const [courseOrders, setCourseOrders] = useState<any[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   // User activity states
   const [likedBlogs, setLikedBlogs] = useState<BlogPost[]>([]);
@@ -112,8 +117,36 @@ function UserDashboardContent() {
               setUserMessages(msgData.data || []);
             }
           }
+
+          // Fetch enrolled courses
+          try {
+            const myCoursesRes = await fetch('/api/my-courses');
+            if (myCoursesRes.ok) {
+              const myCoursesData = await myCoursesRes.json();
+              if (myCoursesData.success) {
+                setEnrolledCourses(myCoursesData.data || []);
+              }
+            }
+          } catch (err) {
+            console.error('Failed to fetch enrolled courses:', err);
+          }
+
+          // Fetch course orders
+          try {
+            const myOrdersRes = await fetch('/api/course-orders/my');
+            if (myOrdersRes.ok) {
+              const myOrdersData = await myOrdersRes.json();
+              if (myOrdersData.success) {
+                setCourseOrders(myOrdersData.data || []);
+              }
+            }
+          } catch (err) {
+            console.error('Failed to fetch course orders:', err);
+          }
+          setCoursesLoading(false);
         } catch (error) {
           console.error('Failed to load user activity:', error);
+          setCoursesLoading(false);
         }
       };
 
@@ -293,6 +326,7 @@ function UserDashboardContent() {
 
   const sidebarTabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
+    { id: 'courses' as const, label: 'My Courses', icon: BookOpen },
     { id: 'chat' as const, label: 'Live Chat', icon: MessageSquare },
     { id: 'messages' as const, label: 'My Messages', icon: Mail },
     { id: 'liked' as const, label: 'Liked Articles', icon: Heart },
@@ -369,6 +403,7 @@ function UserDashboardContent() {
               <div className="flex items-center justify-between border-b border-brand-border-white pb-4">
                 <h1 className="text-xl font-bold text-white tracking-tight uppercase">
                   {activeTab === 'overview' && 'Dashboard Overview'}
+                  {activeTab === 'courses' && 'My Courses'}
                   {activeTab === 'chat' && 'Real-Time Live Chat'}
                   {activeTab === 'messages' && 'My Messages'}
                   {activeTab === 'liked' && 'Liked Articles'}
@@ -431,6 +466,111 @@ function UserDashboardContent() {
                       </div>
                     </div>
                   </Card>
+                </div>
+              )}
+
+              {/* Tab: Courses */}
+              {activeTab === 'courses' && (
+                <div className="space-y-8 text-left">
+                  {/* Enrolled Courses Grid */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold text-white tracking-tight border-l-2 border-brand-accent pl-2.5">
+                      Enrolled Courses
+                    </h3>
+                    {coursesLoading ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[1, 2].map(n => (
+                          <div key={n} className="animate-pulse bg-brand-card/30 border border-brand-border-white/5 rounded-2xl h-48" />
+                        ))}
+                      </div>
+                    ) : enrolledCourses.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {enrolledCourses.map((ec) => (
+                          <Card hoverEffect key={ec.id} className="p-4 border border-brand-border-white flex flex-col justify-between h-full bg-brand-card">
+                            <div className="flex gap-4">
+                              <div className="w-24 h-16 rounded-lg overflow-hidden shrink-0 border border-brand-border-white bg-brand-card-dark">
+                                <img src={ec.thumbnailUrl || '/course-placeholder.jpg'} alt={ec.title} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-xs font-bold text-white truncate leading-snug">{ec.title}</h4>
+                                <p className="text-[9px] text-brand-text-muted mt-1 uppercase font-bold tracking-wider">{ec.paymentStatus} • {ec.accessStatus}</p>
+                                <div className="mt-3 flex items-center gap-2">
+                                  <div className="flex-1 bg-brand-card-dark h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-brand-accent h-full rounded-full" style={{ width: `${ec.progressPercentage}%` }} />
+                                  </div>
+                                  <span className="text-[9px] font-bold text-white">{ec.progressPercentage}%</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {ec.accessStatus === 'pending' ? (
+                              <div className="mt-4 p-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg text-[9px] text-center font-medium">
+                                Your payment is under review. Course access will unlock after approval.
+                              </div>
+                            ) : ec.accessStatus === 'revoked' ? (
+                              <div className="mt-4 p-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-[9px] text-center font-medium">
+                                Access revoked. Please contact support.
+                              </div>
+                            ) : (
+                              <div className="mt-4 flex justify-end">
+                                <Link href={`/learn/${ec.slug}`}>
+                                  <Button variant="primary" size="sm" className="py-1 px-4 text-[10px]">
+                                    Continue Learning
+                                  </Button>
+                                </Link>
+                              </div>
+                            )}
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyState title="No Courses Enrolled" message="You have not enrolled in any courses yet." />
+                    )}
+                  </div>
+
+                  {/* Orders Logs */}
+                  <div className="space-y-4 pt-6 border-t border-brand-border-white/10">
+                    <h3 className="text-sm font-bold text-white tracking-tight border-l-2 border-brand-accent pl-2.5">
+                      Course Purchase History
+                    </h3>
+                    {courseOrders.length > 0 ? (
+                      <div className="overflow-x-auto rounded-xl border border-brand-border-white shadow">
+                        <table className="w-full text-left border-collapse text-[11px]">
+                           <thead>
+                             <tr className="bg-brand-card-dark text-white font-bold border-b border-brand-border-white">
+                               <th className="p-3">Order Number</th>
+                               <th className="p-3">Course</th>
+                               <th className="p-3">Amount</th>
+                               <th className="p-3">Method</th>
+                               <th className="p-3">Status</th>
+                               <th className="p-3">Date</th>
+                             </tr>
+                           </thead>
+                           <tbody className="divide-y divide-brand-border-white text-brand-text-muted">
+                             {courseOrders.map((o) => (
+                               <tr key={o.id} className="hover:bg-brand-card-light/45 transition-colors">
+                                 <td className="p-3 font-semibold text-white">{o.orderNumber}</td>
+                                 <td className="p-3 text-white">{o.courseTitle}</td>
+                                 <td className="p-3">৳{o.amount}</td>
+                                 <td className="p-3 uppercase">{o.paymentMethod}</td>
+                                 <td className="p-3">
+                                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                                     o.orderStatus === 'approved' ? 'bg-green-500/10 text-green-400' :
+                                     o.orderStatus === 'rejected' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-500'
+                                   }`}>
+                                     {o.orderStatus}
+                                   </span>
+                                 </td>
+                                 <td className="p-3">{new Date(o.createdAt).toLocaleDateString()}</td>
+                                </tr>
+                             ))}
+                           </tbody>
+                         </table>
+                      </div>
+                    ) : (
+                      <EmptyState title="No Purchase History" message="No course purchase transactions found." />
+                    )}
+                  </div>
                 </div>
               )}
 

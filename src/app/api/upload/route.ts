@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       return ApiResponse.error('No file(s) found in request', 400);
     }
 
-    const validFolders = ['blog', 'project', 'avatar', 'seo', 'general', 'site-media'];
+    const validFolders = ['blog', 'project', 'avatar', 'seo', 'general', 'site-media', 'course'];
     if (!validFolders.includes(folder)) {
       return ApiResponse.error(`Invalid folder type. Allowed: ${validFolders.join(', ')}`, 400);
     }

@@ -67,9 +67,11 @@ import ServicesTab from '@/components/admin/ServicesTab';
 import SkillsTab from '@/components/admin/SkillsTab';
 import ExperiencesTab from '@/components/admin/ExperiencesTab';
 import EducationTab from '@/components/admin/EducationTab';
+import CoursesTab from '@/components/admin/CoursesTab';
 
 type AdminTab =
   | 'overview'
+  | 'courses'
   | 'projects'
   | 'blogs'
   | 'comments'
@@ -1356,6 +1358,7 @@ function AdminDashboardContent() {
 
   const adminMenuTabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
+    { id: 'courses' as const, label: 'Manage Courses', icon: BookOpen },
     { id: 'chats' as const, label: 'Live Chats', icon: MessageSquare },
     { id: 'projects' as const, label: 'Manage Projects', icon: Briefcase },
     { id: 'blogs' as const, label: 'Manage Blogs', icon: BookOpen },
@@ -1454,6 +1457,11 @@ function AdminDashboardContent() {
                   <Globe className="w-3.5 h-3.5" /> Portal Connected
                 </span>
               </div>
+
+              {/* TAB: COURSES SYSTEM */}
+              {activeTab === 'courses' && (
+                <CoursesTab />
+              )}
 
               {/* TAB 1: OVERVIEW */}
               {activeTab === 'overview' && (
