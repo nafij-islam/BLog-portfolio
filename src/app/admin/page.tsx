@@ -602,7 +602,8 @@ function AdminDashboardContent() {
     if (user && user.role === 'admin') {
       loadData();
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email, user?.role]);
 
   // Projects Modals Helpers
   const openProjectModal = (proj: Project | null) => {

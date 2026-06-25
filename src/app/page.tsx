@@ -43,136 +43,34 @@ export default function HomePage() {
     // Fetch static mock lists
     setTestimonials(mockDb.getTestimonials());
 
-    // Fetch dynamic backend APIs
+    // Fetch dynamic backend APIs batched together for speed
     const fetchDynamicData = async () => {
       try {
-        const projRes = await fetch('/api/projects/featured');
-        if (projRes.ok) {
-          const projJson = await projRes.json();
-          if (projJson.success && projJson.data) {
-            setProjects(projJson.data.slice(0, 3));
-          }
-        }
-
-        const settingsRes = await fetch('/api/admin/settings');
-        if (settingsRes.ok) {
-          const settingsJson = await settingsRes.json();
-          if (settingsJson.success && settingsJson.data) {
-            setSiteSettings(settingsJson.data);
-          }
-        }
-
-        const blogRes = await fetch('/api/blogs/featured');
-        if (blogRes.ok) {
-          const blogJson = await blogRes.json();
-          if (blogJson.success && blogJson.data && blogJson.data.length > 0) {
-            setFeaturedBlog(blogJson.data[0]);
-          }
-        }
-
-        // Fetch CMS Services
-        const servicesRes = await fetch('/api/services');
-        if (servicesRes.ok) {
-          const servicesJson = await servicesRes.json();
-          if (servicesJson.success && servicesJson.data && servicesJson.data.length > 0) {
-            setServices(servicesJson.data);
-          } else {
-            setServices(mockDb.getServices());
-          }
-        } else {
-          setServices(mockDb.getServices());
-        }
-
-        // Fetch CMS Skills
-        const skillsRes = await fetch('/api/skills');
-        if (skillsRes.ok) {
-          const skillsJson = await skillsRes.json();
-          if (skillsJson.success && skillsJson.data && skillsJson.data.length > 0) {
-            setSkills(skillsJson.data);
-          } else {
-            setSkills(mockDb.getSkills());
-          }
-        } else {
-          setSkills(mockDb.getSkills());
-        }
-
-        // Fetch CMS Experiences
-        const expRes = await fetch('/api/experiences');
-        if (expRes.ok) {
-          const expJson = await expRes.json();
-          if (expJson.success && expJson.data && expJson.data.length > 0) {
-            setExperience(expJson.data);
-          } else {
-            setExperience(mockDb.getExperience());
-          }
-        } else {
-          setExperience(mockDb.getExperience());
-        }
-
-        // Fetch Page Media
-        const mediaRes = await fetch('/api/site-media');
-        if (mediaRes.ok) {
-          const mediaJson = await mediaRes.json();
-          if (mediaJson.success) {
-            setPageMedia(mediaJson.data);
-          }
-        }
-
-        // Fetch Challenge Winners
-        const winnersRes = await fetch('/api/home/challenge-winners');
-        if (winnersRes.ok) {
-          const winnersJson = await winnersRes.json();
-          if (winnersJson.success) {
-            setWinners(winnersJson.data.winners || []);
-            setChallengeTitle(winnersJson.data.challengeTitle || '');
-          }
-        }
-
-        // Fetch Featured Q&As
-        const qasRes = await fetch('/api/ask-nafij?featured=true');
-        if (qasRes.ok) {
-          const qasJson = await qasRes.json();
-          if (qasJson.success) {
-            setFeaturedQAs(qasJson.data.qas?.slice(0, 3) || []);
-          }
-        }
-
-        // Fetch Featured Reviews
-        const reviewsRes = await fetch('/api/site-review?featured=true');
-        if (reviewsRes.ok) {
-          const reviewsJson = await reviewsRes.json();
-          if (reviewsJson.success) {
-            setFeaturedReviews(reviewsJson.data?.slice(0, 3) || []);
-          }
-        }
-
-        // Fetch Course System Data
-        try {
-          const coursesRes = await fetch('/api/courses?isFeatured=true&limit=3');
-          if (coursesRes.ok) {
-            const coursesJson = await coursesRes.json();
-            if (coursesJson.success && coursesJson.data) {
-              setFeaturedCourses(coursesJson.data);
+        const res = await fetch('/api/home/all-data');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            const d = json.data;
+            setProjects(d.projects || []);
+            setSiteSettings(d.siteSettings || null);
+            if (d.blogs && d.blogs.length > 0) {
+              setFeaturedBlog(d.blogs[0]);
             }
+            setServices(d.services?.length ? d.services : mockDb.getServices());
+            setSkills(d.skills?.length ? d.skills : mockDb.getSkills());
+            setExperience(d.experiences?.length ? d.experiences : mockDb.getExperience());
+            setPageMedia(d.pageMedia || null);
+            setWinners(d.challengeWinners?.winners || []);
+            setChallengeTitle(d.challengeWinners?.challengeTitle || '');
+            setFeaturedQAs(d.featuredQAs || []);
+            setFeaturedReviews(d.featuredReviews || []);
+            setFeaturedCourses(d.featuredCourses || []);
+            setCourseSettings(d.courseSettings || null);
           }
-        } catch (err) {
-          console.error('Failed to fetch featured courses:', err);
         }
-
-        try {
-          const courseSettingsRes = await fetch('/api/course-settings');
-          if (courseSettingsRes.ok) {
-            const courseSettingsJson = await courseSettingsRes.json();
-            if (courseSettingsJson.success && courseSettingsJson.data) {
-              setCourseSettings(courseSettingsJson.data);
-            }
-          }
-        } catch (err) {
-          console.error('Failed to fetch course settings:', err);
-        }
-        setCoursesLoading(false);
       } catch (err) {
         console.error('Failed to fetch dynamic homepage data:', err);
+      } finally {
         setCoursesLoading(false);
       }
     };
