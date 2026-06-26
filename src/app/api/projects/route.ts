@@ -4,13 +4,21 @@ import Project from '@/models/Project';
 import { AuthHelper } from '@/lib/auth';
 import { ApiResponse } from '@/lib/api-response';
 import { generateUniqueSlug } from '@/lib/slugify';
+import { serverCache } from '@/lib/server-cache';
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || '';
+
+    const cacheKey = `projects:search=${search}:category=${category}`;
+    const cachedData = serverCache.get<any>(cacheKey);
+    if (cachedData) {
+      return ApiResponse.success(cachedData, 'Projects fetched successfully (from cache)');
+    }
+
+    await connectDB();
 
     const filter: any = {};
     if (search) {
@@ -41,6 +49,8 @@ export async function GET(req: NextRequest) {
       seoDescription: p.seoDescription || '',
       seoKeywords: p.seoKeywords || '',
     }));
+
+    serverCache.set(cacheKey, formatted, 600000); // 10 minutes cache
 
     return ApiResponse.success(formatted, 'Projects fetched successfully');
   } catch (err: any) {
@@ -91,8 +101,11 @@ export async function POST(req: NextRequest) {
       solution: solution || '',
       seoTitle: seoTitle || finalTitle,
       seoDescription: seoDescription || finalShortDesc,
-      seoKeywords: seoKeywords || '',
+      seoKeywords: seoKeywords || finalTechs.join(', '),
     });
+
+    // Invalidate caches
+    serverCache.clear();
 
     return ApiResponse.success(project, 'Project created successfully', 201);
   } catch (err: any) {

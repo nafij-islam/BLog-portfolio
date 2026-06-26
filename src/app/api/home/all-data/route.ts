@@ -14,9 +14,16 @@ import Course from '@/models/Course';
 import CourseSettings from '@/models/CourseSettings';
 import SiteSettings from '@/models/SiteSettings';
 import { ApiResponse } from '@/lib/api-response';
+import { serverCache } from '@/lib/server-cache';
 
 export async function GET(req: NextRequest) {
   try {
+    const cacheKey = 'home:all-data';
+    const cachedData = serverCache.get<any>(cacheKey);
+    if (cachedData) {
+      return ApiResponse.success(cachedData, 'All homepage data retrieved from cache');
+    }
+
     await connectDB();
 
     // Perform queries in parallel
@@ -231,7 +238,7 @@ export async function GET(req: NextRequest) {
     };
     const courseSettings = courseSettingsRaw || defaultCourseSettings;
 
-    return ApiResponse.success({
+    const responseData = {
       siteSettings: dbSettings || {},
       projects,
       blogs,
@@ -244,7 +251,12 @@ export async function GET(req: NextRequest) {
       featuredReviews,
       featuredCourses,
       courseSettings,
-    }, 'All homepage data batched successfully');
+    };
+
+    // Cache for 10 minutes
+    serverCache.set(cacheKey, responseData, 600000);
+
+    return ApiResponse.success(responseData, 'All homepage data batched successfully');
   } catch (err: any) {
     console.error('All homepage data batch error:', err);
     return ApiResponse.serverError('Failed to fetch batch homepage data');

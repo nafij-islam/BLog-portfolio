@@ -1,6 +1,33 @@
 import mongoose from 'mongoose';
 import dns from 'node:dns';
 
+// Register global Mongoose plugin to clear server-side memory cache on any data mutations
+mongoose.plugin((schema) => {
+  const clearCache = function(this: any) {
+    const modelName = (this.constructor && this.constructor.modelName) || (this.model && this.model.modelName);
+    const ignoredModels = ['VisitorEvent', 'ChallengeAttempt', 'ChallengeSession', 'LessonProgress'];
+    if (modelName && ignoredModels.includes(modelName)) {
+      return;
+    }
+    try {
+      import('./server-cache').then(({ serverCache }) => {
+        serverCache.clear();
+      });
+    } catch (err) {
+      console.error('Failed to clear cache on DB write:', err);
+    }
+  };
+
+  schema.post('save', clearCache);
+  schema.post('updateOne', clearCache);
+  schema.post('updateMany', clearCache);
+  schema.post('findOneAndUpdate', clearCache);
+  schema.post('findOneAndDelete', clearCache);
+  schema.post('deleteOne', clearCache);
+  schema.post('deleteMany', clearCache);
+  schema.post('insertMany', clearCache);
+});
+
 // Fix for Node.js querySrv ECONNREFUSED DNS resolution issues with MongoDB Atlas SRV records
 try {
   dns.setDefaultResultOrder('ipv4first');

@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Project from '@/models/Project';
 import { AuthHelper } from '@/lib/auth';
 import { ApiResponse } from '@/lib/api-response';
+import { serverCache } from '@/lib/server-cache';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -78,6 +79,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (seoKeywords !== undefined) updateFields.seoKeywords = seoKeywords;
 
     const updated = await Project.findByIdAndUpdate(id, { $set: updateFields }, { new: true });
+    
+    // Invalidate caches
+    serverCache.clear();
+
     return ApiResponse.success(updated, 'Project updated successfully');
   } catch (err: any) {
     console.error('Update project error:', err);
@@ -99,7 +104,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return ApiResponse.notFound('Project not found');
     }
 
-    return ApiResponse.success({}, 'Project deleted successfully');
+    // Invalidate caches
+    serverCache.clear();
+
+    return ApiResponse.success(null, 'Project deleted successfully');
   } catch (err: any) {
     console.error('Delete project error:', err);
     return ApiResponse.serverError('Failed to delete project');

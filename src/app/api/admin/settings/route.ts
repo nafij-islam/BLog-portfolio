@@ -81,6 +81,10 @@ export async function POST(req: NextRequest) {
       settings = await SiteSettings.findByIdAndUpdate(settings._id, { $set: updateFields }, { new: true });
     }
 
+    // Invalidate server cache
+    const { serverCache } = await import('@/lib/server-cache');
+    serverCache.clear();
+
     return ApiResponse.success(settings, 'Settings updated successfully');
   } catch (err: any) {
     console.error('Update settings error:', err);

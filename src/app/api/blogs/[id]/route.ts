@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import { AuthHelper } from '@/lib/auth';
 import { ApiResponse } from '@/lib/api-response';
+import { serverCache } from '@/lib/server-cache';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -50,6 +51,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       seoKeywords: blog.seoKeywords,
       seoOgImage: blog.ogImage
     };
+
+    // Invalidate list caches as viewsCount is incremented
+    serverCache.clear();
 
     return ApiResponse.success(formatted, 'Article fetched successfully');
   } catch (err: any) {
@@ -106,6 +110,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (canonicalUrl !== undefined) updateFields.canonicalUrl = canonicalUrl;
 
     const updated = await Blog.findByIdAndUpdate(id, { $set: updateFields }, { new: true });
+    
+    // Invalidate caches
+    serverCache.clear();
+
     return ApiResponse.success(updated, 'Article updated successfully');
   } catch (err: any) {
     console.error('Update blog error:', err);
@@ -126,6 +134,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (!deleted) {
       return ApiResponse.notFound('Article not found');
     }
+
+    // Invalidate caches
+    serverCache.clear();
 
     return ApiResponse.success({}, 'Article deleted successfully');
   } catch (err: any) {

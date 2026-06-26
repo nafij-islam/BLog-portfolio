@@ -4,10 +4,10 @@ import Blog from '@/models/Blog';
 import { AuthHelper } from '@/lib/auth';
 import { ApiResponse } from '@/lib/api-response';
 import { generateUniqueSlug } from '@/lib/slugify';
+import { serverCache } from '@/lib/server-cache';
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || '';
@@ -19,6 +19,14 @@ export async function GET(req: NextRequest) {
 
     const payload = await AuthHelper.getAuthPayload();
     const isAdmin = payload?.role === 'admin';
+
+    const cacheKey = `blogs:isAdmin=${isAdmin}:search=${search}:category=${category}:tag=${tag}:status=${status}:page=${page}:limit=${limit}:ids=${ids}`;
+    const cachedData = serverCache.get<any>(cacheKey);
+    if (cachedData) {
+      return ApiResponse.success(cachedData, 'Blogs fetched successfully (from cache)');
+    }
+
+    await connectDB();
 
     const filter: any = {};
 
@@ -89,13 +97,17 @@ export async function GET(req: NextRequest) {
       seoOgImage: b.ogImage
     }));
 
-    return ApiResponse.success({
+    const responseData = {
       blogs: formatted,
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit)
-    });
+    };
+
+    serverCache.set(cacheKey, responseData, 600000); // 10 minutes cache
+
+    return ApiResponse.success(responseData);
   } catch (err: any) {
     console.error('Fetch blogs error:', err);
     return ApiResponse.serverError('Failed to fetch articles');
@@ -145,6 +157,9 @@ export async function POST(req: NextRequest) {
       canonicalUrl: canonicalUrl || '',
       publishedAt: blogStatus === 'published' ? new Date() : undefined
     });
+
+    // Invalidate caches
+    serverCache.clear();
 
     return ApiResponse.success(blog, 'Article created successfully', 201);
   } catch (err: any) {
